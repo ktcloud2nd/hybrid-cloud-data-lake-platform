@@ -1,0 +1,15 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.tmp_pypdf/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.tfvars
+!*.tfvars.example
