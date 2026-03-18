@@ -1,0 +1,4 @@
+vehicle_id,driver_code,timestamp,lat,lon,speed,engine_on,fuel
+car_1,driver_1,2026-03-18T10:00:00,37.5665,126.9780,78,true,82.5
+car_2,driver_2,2026-03-18T10:00:00,37.5219,126.9245,0,false,91.2
+car_3,driver_3,2026-03-18T10:00:00,37.4500,127.1000,55,true,64.8

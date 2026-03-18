@@ -1,0 +1,3 @@
+vehicle_id,driver_code,timestamp,alert_type,message
+car_1,driver_1,2026-03-18T10:00:00,OVERSPEED,Speed exceeded threshold
+car_2,driver_2,2026-03-18T10:05:00,ENGINE_OFF,Engine turned off
