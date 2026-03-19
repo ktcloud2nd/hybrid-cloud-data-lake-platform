@@ -1,7 +1,7 @@
 name_prefix = "ktcloud2nd-dev"
 
 db_name     = "vehicle_db"
-db_username = "admin"
+db_username = "dbadmin"
 db_password = "change-me"
 
 db_subnet_ids = [
