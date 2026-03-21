@@ -33,8 +33,8 @@ variable "public_subnet_cidrs" {
   default     = ["10.0.0.0/24", "10.0.1.0/24"]
 
   validation {
-    condition     = length(var.public_subnet_cidrs) == length(var.availability_zones)
-    error_message = "Public subnet count must match the number of AZs."
+    condition     = length(var.public_subnet_cidrs) > 0                 # 수정됨
+    error_message = "At least one public subnet CIDR must be provided." # 수정됨
   }
 }
 
@@ -44,8 +44,8 @@ variable "private_app_subnet_cidrs" {
   default     = ["10.0.10.0/24", "10.0.11.0/24"]
 
   validation {
-    condition     = length(var.private_app_subnet_cidrs) == length(var.availability_zones)
-    error_message = "Private app subnet count must match the number of AZs."
+    condition     = length(var.private_app_subnet_cidrs) > 0                 # 수정됨
+    error_message = "At least one private app subnet CIDR must be provided." # 수정됨
   }
 }
 
@@ -55,8 +55,8 @@ variable "private_db_subnet_cidrs" {
   default     = ["10.0.20.0/24", "10.0.21.0/24"]
 
   validation {
-    condition     = length(var.private_db_subnet_cidrs) == length(var.availability_zones)
-    error_message = "Private DB subnet count must match the number of AZs."
+    condition     = length(var.private_db_subnet_cidrs) > 0                 # 수정됨
+    error_message = "At least one private DB subnet CIDR must be provided." # 수정됨
   }
 }
 
