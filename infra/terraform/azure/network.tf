@@ -39,7 +39,7 @@ resource "azurerm_subnet" "db_subnet" {
 }
 
 # NAT Gateway
-# Consumer Public IP 생성
+# Consumer Public IP 생성 (NAT Gateway에 붙음)
 resource "azurerm_public_ip" "consumer_nat_ip" {
   name                = "consumer-nat-ip"
   location            = azurerm_resource_group.rg.location
