@@ -21,7 +21,7 @@ env:
 
   # variables.tf로 밀어 넣을 비밀 정보
   TF_VAR_public_key: ${{ secrets.AZURE_PUBLIC_KEY }}
-  TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+  TF_VAR_db_password: ${{ secrets.AZURE_DB_PASSWORD }}
 
 jobs:
   terraform-azure:
