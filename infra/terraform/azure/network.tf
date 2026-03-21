@@ -38,6 +38,36 @@ resource "azurerm_subnet" "db_subnet" {
   }
 }
 
+# NAT Gateway
+# Consumer Public IP 생성
+resource "azurerm_public_ip" "consumer_nat_ip" {
+  name                = "consumer-nat-ip"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+# NAT Gateway 생성
+resource "azurerm_nat_gateway" "consumer_nat_gw" {
+  name                = "consumer-nat-gw"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku_name            = "Standard"
+}
+
+# NAT Gateway에 Public IP 연결
+resource "azurerm_nat_gateway_public_ip_association" "nat_ip_assoc" {
+  nat_gateway_id       = azurerm_nat_gateway.consumer_nat_gw.id
+  public_ip_address_id = azurerm_public_ip.consumer_nat_ip.id
+}
+
+# Consuemr Subnet에 NAT Gateway 연결
+resource "azurerm_subnet_nat_gateway_association" "consumer_subnet_nat" {
+  subnet_id      = azurerm_subnet.consumer_subnet.id
+  nat_gateway_id = azurerm_nat_gateway.consumer_nat_gw.id
+}
+
 # Broker NSG 생성
 resource "azurerm_network_security_group" "broker_nsg" {
   name                = "broker-nsg"

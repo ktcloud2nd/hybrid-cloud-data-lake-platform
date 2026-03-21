@@ -1,6 +1,6 @@
 # Public IP 생성
-resource "azurerm_public_ip" "broker_ip" {
-  name                = "broker-ip"
+resource "azurerm_public_ip" "broker_public_ip" {
+  name                = "broker-public-ip"
   location            = var.region                            # 변수 적용
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"                          # 고정 IP 설정
@@ -18,7 +18,7 @@ resource "azurerm_network_interface" "broker_nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.broker_subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.broker_ip.id
+    public_ip_address_id          = azurerm_public_ip.broker_public_ip.id
   }
 }
 
