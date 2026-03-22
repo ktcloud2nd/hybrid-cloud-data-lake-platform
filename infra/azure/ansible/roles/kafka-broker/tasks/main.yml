@@ -28,7 +28,7 @@
     seconds: 30
   remark: "컨테이너가 뜬 후 내부적으로 브로커들이 서로 인식할 시간이 필요합니다."
 
-- name: 1. raw_topic 생성 (원본 데이터 수집용)
+- name: raw_topic 생성 (원본 데이터 수집용)
   shell:
     cmd: >
       docker exec kafka1 kafka-topics --create 
@@ -39,7 +39,7 @@
   run_once: true
   ignore_errors: yes
 
-- name: 2. cleansed_topic 생성 (정제 데이터 보관용)
+- name: cleansed_topic 생성 (정제 데이터 보관용)
   shell:
     cmd: >
       docker exec kafka1 kafka-topics --create 
