@@ -1,4 +1,4 @@
-# Public IP 생성
+# Broker Public IP 생성
 resource "azurerm_public_ip" "broker_public_ip" {
   name                = "broker-public-ip"
   location            = var.region                            # 변수 적용

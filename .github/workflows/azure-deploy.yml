@@ -77,7 +77,9 @@ jobs:
         BROKER_IP=$(terraform output -json broker_public_ip | jq -r .)
         CONSUMER_IP=$(terraform output -json consumer_public_ip | jq -r .)
         VM_USER=$(terraform output -json admin_username | jq -r .)
-        
+
+        echo "Checking IPs: Broker($BROKER_IP), Consumer($CONSUMER_IP)"
+
         cat <<EOF > azure_hosts.ini
         [azure_broker]
         broker-vm ansible_host=${BROKER_IP}
@@ -92,7 +94,7 @@ jobs:
         [azure_vms:vars]
         ansible_user=${VM_USER}
         ansible_ssh_private_key_file=~/.ssh/id_rsa
-        ansible_python_interpreter=/usr/bin/python3
+        ansible_ssh_common_args='-o StrictHostKeyChecking=no'
         EOF
 
     # Ansible 실행

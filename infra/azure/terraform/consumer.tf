@@ -1,3 +1,12 @@
+# Consumer Public IP 생성
+resource "azurerm_public_ip" "consumer_public_ip" {
+  name                = "consumer-public-ip"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard" # NAT Gateway와 호환되려면 Standard여야 함
+}
+
 # Consumer NIC 생성
 resource "azurerm_network_interface" "consumer_nic" {
   name                = "consumer-nic"
@@ -9,6 +18,7 @@ resource "azurerm_network_interface" "consumer_nic" {
     subnet_id                     = azurerm_subnet.consumer_subnet.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.0.2.4"
+    public_ip_address_id          = azurerm_public_ip.consumer_public_ip.id
   }
 }
 
