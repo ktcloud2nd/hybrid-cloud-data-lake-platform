@@ -6,12 +6,12 @@ on:
       - main
       - aws-cicd
     paths:
-      - 'infra/terraform/aws/**'
+      - 'infra/aws/terraform/**'
       - '.github/workflows/deploy-infra-aws.yml'
 
   pull_request:
     paths:
-      - 'infra/terraform/aws/**'
+      - 'infra/aws/terraform/**'
       - '.github/workflows/deploy-infra-aws.yml'
 
   workflow_dispatch:
@@ -26,7 +26,8 @@ concurrency:
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   TF_VERSION: '1.8.5'
-  TF_VAR_network_state_path: ../network/terraform.tfstate
+  # 기존코드+수정됨: local state path 변수 제거, S3 backend 기준으로 동작
+  # TF_VAR_network_state_path: ../network/terraform.tfstate
 
 jobs:
   terraform-plan:
@@ -50,61 +51,62 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Check Terraform formatting
-        run: terraform fmt -check -recursive infra/terraform/aws
+        run: terraform fmt -check -recursive infra/aws/terraform
 
       - name: Prepare compute tfvars from example
-        working-directory: infra/terraform/aws/compute
+        working-directory: infra/aws/terraform/compute
         shell: bash
         run: |
           cp terraform.tfvars.example terraform.tfvars
           sed -i 's|^k3s_shared_token *=.*|k3s_shared_token = "${{ secrets.K3S_TOKEN }}"|' terraform.tfvars
 
       - name: Prepare data tfvars from example
-        working-directory: infra/terraform/aws/data
+        working-directory: infra/aws/terraform/data
         shell: bash
         run: |
           cp terraform.tfvars.example terraform.tfvars
 
-      # NETWORK
       - name: Network Init
-        working-directory: infra/terraform/aws/network
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/network
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Network Validate
-        working-directory: infra/terraform/aws/network
+        working-directory: infra/aws/terraform/network
         run: terraform validate
 
       - name: Network Plan
-        working-directory: infra/terraform/aws/network
+        working-directory: infra/aws/terraform/network
         run: terraform plan -input=false -out=tfplan
 
       - name: Show Network Plan
-        working-directory: infra/terraform/aws/network
+        working-directory: infra/aws/terraform/network
         run: terraform show -no-color tfplan
 
-      # COMPUTE
       - name: Compute Init
-        working-directory: infra/terraform/aws/compute
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/compute
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Compute Validate
-        working-directory: infra/terraform/aws/compute
+        working-directory: infra/aws/terraform/compute
         run: terraform validate
 
-      # DATA
       - name: Data Init
-        working-directory: infra/terraform/aws/data
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/data
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Data Validate
-        working-directory: infra/terraform/aws/data
+        working-directory: infra/aws/terraform/data
         run: terraform validate
 
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
     needs: terraform-plan
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # 기존코드+수정됨: aws-cicd 브랜치에서도 apply 검증이 가능하도록 조건 확장
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/aws-cicd') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
     steps:
       - name: Checkout repository
@@ -123,41 +125,41 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Prepare compute tfvars from example
-        working-directory: infra/terraform/aws/compute
+        working-directory: infra/aws/terraform/compute
         shell: bash
         run: |
           cp terraform.tfvars.example terraform.tfvars
           sed -i 's|^k3s_shared_token *=.*|k3s_shared_token = "${{ secrets.K3S_TOKEN }}"|' terraform.tfvars
 
       - name: Prepare data tfvars from example
-        working-directory: infra/terraform/aws/data
+        working-directory: infra/aws/terraform/data
         shell: bash
         run: |
           cp terraform.tfvars.example terraform.tfvars
 
-      # NETWORK APPLY
       - name: Network Init
-        working-directory: infra/terraform/aws/network
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/network
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Network Apply
-        working-directory: infra/terraform/aws/network
+        working-directory: infra/aws/terraform/network
         run: terraform apply -input=false -auto-approve
 
-      # COMPUTE APPLY
       - name: Compute Init
-        working-directory: infra/terraform/aws/compute
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/compute
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Compute Apply
-        working-directory: infra/terraform/aws/compute
+        working-directory: infra/aws/terraform/compute
         run: terraform apply -input=false -auto-approve
 
-      # DATA APPLY
       - name: Data Init
-        working-directory: infra/terraform/aws/data
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/data
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Data Apply
-        working-directory: infra/terraform/aws/data
+        working-directory: infra/aws/terraform/data
         run: terraform apply -input=false -auto-approve

@@ -1,5 +1,10 @@
 aws_region         = "ap-northeast-2"
-network_state_path = "../network/terraform.tfstate"
+
+# 기존코드+수정됨
+# network_state_path = "../network/terraform.tfstate"
+network_state_bucket = "8team-terraform-tfstate"
+network_state_key    = "network/terraform.tfstate"
+network_state_region = "ap-northeast-2"
 
 name_prefix = "ktcloud2nd-dev"
 

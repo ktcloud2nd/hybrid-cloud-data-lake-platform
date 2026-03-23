@@ -13,7 +13,8 @@ concurrency:
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   TF_VERSION: '1.8.5'
-  TF_VAR_network_state_path: ../network/terraform.tfstate
+  # 기존코드+수정됨: local state path 변수 제거, S3 backend 기준으로 동작
+  # TF_VAR_network_state_path: ../network/terraform.tfstate
 
 jobs:
   destroy-all:
@@ -37,41 +38,44 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Prepare compute tfvars from example
-        working-directory: infra/terraform/aws/compute
+        working-directory: infra/aws/terraform/compute
         shell: bash
         run: |
           cp terraform.tfvars.example terraform.tfvars
           sed -i 's|^k3s_shared_token *=.*|k3s_shared_token = "${{ secrets.K3S_TOKEN }}"|' terraform.tfvars
 
       - name: Prepare data tfvars from example
-        working-directory: infra/terraform/aws/data
+        working-directory: infra/aws/terraform/data
         shell: bash
         run: |
           cp terraform.tfvars.example terraform.tfvars
 
       # COMPUTE DESTROY
       - name: Compute Init
-        working-directory: infra/terraform/aws/compute
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/compute
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Compute Destroy
-        working-directory: infra/terraform/aws/compute
+        working-directory: infra/aws/terraform/compute
         run: terraform destroy -input=false -auto-approve
 
       # DATA DESTROY
       - name: Data Init
-        working-directory: infra/terraform/aws/data
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/data
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Data Destroy
-        working-directory: infra/terraform/aws/data
+        working-directory: infra/aws/terraform/data
         run: terraform destroy -input=false -auto-approve
 
       # NETWORK DESTROY
       - name: Network Init
-        working-directory: infra/terraform/aws/network
-        run: terraform init -input=false
+        working-directory: infra/aws/terraform/network
+        # 기존코드+수정됨: S3 backend 재초기화를 위해 -reconfigure 추가
+        run: terraform init -input=false -reconfigure
 
       - name: Network Destroy
-        working-directory: infra/terraform/aws/network
+        working-directory: infra/aws/terraform/network
         run: terraform destroy -input=false -auto-approve

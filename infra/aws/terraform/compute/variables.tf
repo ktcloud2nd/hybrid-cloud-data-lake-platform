@@ -4,10 +4,29 @@ variable "aws_region" {
   default     = "ap-northeast-2"
 }
 
-variable "network_state_path" {
-  description = "Local path to the network terraform state file."
+// 기존코드+수정됨
+// variable "network_state_path" {
+//   description = "Local path to the network terraform state file."
+//   type        = string
+//   default     = "../network/terraform.tfstate"
+// }
+
+variable "network_state_bucket" {
+  description = "S3 bucket that stores the network terraform state file."
   type        = string
-  default     = "../network/terraform.tfstate"
+  default     = "8team-terraform-tfstate"
+}
+
+variable "network_state_key" {
+  description = "S3 object key for the network terraform state file."
+  type        = string
+  default     = "network/terraform.tfstate"
+}
+
+variable "network_state_region" {
+  description = "AWS region of the S3 bucket that stores the network terraform state file."
+  type        = string
+  default     = "ap-northeast-2"
 }
 
 variable "cluster_name" {
