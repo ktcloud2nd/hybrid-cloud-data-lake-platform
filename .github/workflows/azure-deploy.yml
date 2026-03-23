@@ -21,7 +21,6 @@ env:
 
   # variables.tf로 밀어 넣을 비밀 정보
   TF_VAR_public_key: ${{ secrets.AZURE_PUBLIC_KEY }}
-  TF_VAR_db_password: ${{ secrets.AZURE_DB_PASSWORD }}
 
 jobs:
   terraform-azure:
@@ -45,6 +44,13 @@ jobs:
     - name: Terraform Apply
       if: ${{ github.event.inputs.action == 'apply' }}
       run: terraform apply -auto-approve
+
+    # Terraform이 만든 Azure 스토리지 정보를 환경 변수로 추출 (Ansible 전달용)
+    - name: Get Storage Info from Terraform
+      if: ${{ github.event.inputs.action == 'apply' }}
+      run: |
+        echo "AZURE_STORAGE_NAME=$(terraform output -raw azure_storage_account_name)" >> $GITHUB_ENV
+        echo "AZURE_STORAGE_KEY=$(terraform output -raw azure_storage_primary_key)" >> $GITHUB_ENV
 
     # Terraform Output을 Inventory 파일로 변환
     - name: Generate Ansible Inventory
@@ -77,14 +83,20 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa # 보안 강화
+        chmod 600 ~/.ssh/id_rsa
 
     # Ansible 실행
     - name: Run Ansible Playbook
       if: ${{ github.event.inputs.action == 'apply' }}
       run: |
         ansible-playbook -i azure_hosts.ini ../ansible/playbook.yml \
-          -e "ansible_ssh_common_args='-o StrictHostKeyChecking=no'"
+          -e "ansible_ssh_common_args='-o StrictHostKeyChecking=no'" \
+          -e "aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          -e "aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          -e "aws_region=${{ vars.AWS_REGION }}" \
+          -e "s3_bucket_name=${{ secrets.S3_BUCKET_NAME }}" \
+          -e "azure_storage_account_name=${{ env.AZURE_STORAGE_NAME }}" \
+          -e "azure_storage_primary_key=${{ env.AZURE_STORAGE_KEY }}"
 
     - name: Terraform Destroy
       if: ${{ github.event.inputs.action == 'destroy' }}

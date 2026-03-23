@@ -1,0 +1,70 @@
+---
+- name: Consumer 작업용 루트(앱) 디렉토리 생성
+  file:
+    path: "/home/{{ ansible_user }}/consumer-app/app"
+    state: directory
+    mode: '0755'
+
+- name: Python 정제기 코드 및 의존성 파일 복사
+  copy:
+    src: "{{ item }}"
+    dest: "/home/{{ ansible_user }}/consumer-app/app/{{ item }}"
+  loop:
+    - processor.py
+    - requirements.txt
+  ignore_errors: yes
+
+- name: Docker Compose 템플릿 배포
+  template:
+    src: docker-compose.yml.j2
+    dest: "/home/{{ ansible_user }}/consumer-app/docker-compose.yml"
+
+- name: Consumer 컨테이너 2개 실행 (Python & Kafka Connect)
+  shell:
+    cmd: "docker compose up -d"
+    chdir: "/home/{{ ansible_user }}/consumer-app"
+
+- name: Kafka Connect 서비스 안정화 대기
+  pause:
+    seconds: 45
+  remark: "플러그인(DB, S3)을 다운로드하고 8083 포트가 열릴 때까지 여유 있게 기다립니다."
+
+- name: "Azure Blob Storage Sink 커넥터 설정 (Raw Data)"
+  uri:
+    url: "http://localhost:8083/connectors"
+    method: POST
+    body_format: json
+    body:
+      name: "azure-blob-raw-sink"
+      config:
+        connector.class: "io.confluent.connect.azure.blob.storage.AzureBlobStorageSinkConnector"
+        tasks.max: "1"
+        topics: "raw_topic"
+        # Azure 스토리지 정보 (Terraform Output에서 넘어온 변수 활용)
+        azblob.account.name: "{{ azure_storage_account_name }}"
+        azblob.account.key: "{{ azure_storage_primary_key }}"
+        azblob.container.name: "raw-topic-container"
+        format.class: "io.confluent.connect.azure.blob.storage.format.avro.AvroFormat"
+        flush.size: "100"
+    status_code: [201, 409] # 409는 이미 존재할 경우 무시
+
+- name: "AWS S3 Sink 커넥터 설정 (Cleansed Data)"
+  uri:
+    url: "http://localhost:8083/connectors"
+    method: POST
+    body_format: json
+    body:
+      name: "aws-s3-cleansed-sink"
+      config:
+        connector.class: "io.confluent.connect.s3.S3SinkConnector"
+        tasks.max: "1"
+        topics: "cleansed_topic"
+        s3.bucket.name: "{{ s3_bucket_name }}"
+        s3.region: "ap-northeast-2"
+        # AWS 인증 정보 (Github Secrets에서 넘어온 변수 활용)
+        aws.access.key.id: "{{ aws_access_key }}"
+        aws.secret.access.key: "{{ aws_secret_key }}"
+        format.class: "io.confluent.connect.s3.format.json.JsonFormat"
+        storage.class: "io.confluent.connect.s3.storage.S3Storage"
+        flush.size: "100"
+    status_code: [201, 409]

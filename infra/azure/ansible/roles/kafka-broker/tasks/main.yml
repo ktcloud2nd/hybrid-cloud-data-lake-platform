@@ -18,7 +18,6 @@
     dest: "/home/{{ ansible_user }}/kafka-cluster/docker-compose.yml"
 
 - name: Kafka 브로커 컨테이너 실행
-  become: yes
   shell:
     cmd: "docker compose up -d"
     chdir: "/home/{{ ansible_user }}/kafka-cluster"

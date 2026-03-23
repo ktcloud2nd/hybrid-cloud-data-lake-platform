@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 파이썬 데이터 정제기
+  python-processor:
+    image: python:3.9-slim
+    container_name: python-processor
+    volumes:
+      - /home/{{ ansible_user }}/consumer-app/app:/app
+    working_dir: /app
+    command: sh -c "pip install --no-cache-dir -r requirements.txt && python processor.py"
+    environment:
+      KAFKA_BROKER: "{{ hostvars[groups['azure_broker'][0]]['ansible_host'] }}:9092"
+      PYTHONUNBUFFERED: 1
+
+  # Kafka Connect
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.5.0
+    container_name: kafka-connect
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "{{ hostvars[groups['azure_broker'][0]]['ansible_host'] }}:9092"
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: "consumer-connect-cluster"
+      
+      CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
+      CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
+      CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+
+      # AWS S3에 접근하기 위한 값
+      AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+      AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+      AWS_REGION: "{{ aws_region }}"
+    
+    command: 
+      - bash
+      - -c
+      - |
+        echo "Installing Azure Blob and S3 connectors..."
+        # Azure Blob Storage용 플러그인 추가
+        confluent-hub install --no-prompt confluentinc/kafka-connect-azure-blob-storage:latest
+        
+        # AWS S3용 플러그인
+        confluent-hub install --no-prompt confluentinc/kafka-connect-s3:latest
+        
+        echo "Launching Kafka Connect..."
+        /etc/confluent/docker/run
+    restart: always

@@ -20,22 +20,9 @@ resource "azurerm_subnet" "consumer_subnet" {
   address_prefixes     = ["10.0.2.0/24"]
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-}
 
-# DB Subnet 생성
-resource "azurerm_subnet" "db_subnet" {
-	name                 = "db-subnet"
-  address_prefixes     = ["10.0.3.0/24"]
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-
-  delegation {
-    name = "fs"
-    service_delegation {
-      name    = "Microsoft.DBforPostgreSQL/flexibleServers"
-      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
-    }
-  }
+  # Azure 스토리지와 통신할 때 내부망(Azure Backbone)만 타도록 설정
+  service_endpoints    = ["Microsoft.Storage"]
 }
 
 # NAT Gateway
@@ -131,25 +118,6 @@ resource "azurerm_network_security_group" "consumer_nsg" {
   }
 }
 
-# DB NSG 생성
-resource "azurerm_network_security_group" "db_nsg" {
-  name                = "db-nsg"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  security_rule {
-    name                       = "allow-db"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_address_prefix      = "10.0.2.0/24"
-    destination_port_range     = "5432"
-    source_port_range          = "*"
-    destination_address_prefix = "*"
-  }
-}
-
 # NSG 연결
 resource "azurerm_subnet_network_security_group_association" "broker_assoc" {
   subnet_id                 = azurerm_subnet.broker_subnet.id
@@ -159,9 +127,4 @@ resource "azurerm_subnet_network_security_group_association" "broker_assoc" {
 resource "azurerm_subnet_network_security_group_association" "consumer_assoc" {
   subnet_id                 = azurerm_subnet.consumer_subnet.id
   network_security_group_id = azurerm_network_security_group.consumer_nsg.id
-}
-
-resource "azurerm_subnet_network_security_group_association" "db_assoc" {
-  subnet_id                 = azurerm_subnet.db_subnet.id
-  network_security_group_id = azurerm_network_security_group.db_nsg.id
 }

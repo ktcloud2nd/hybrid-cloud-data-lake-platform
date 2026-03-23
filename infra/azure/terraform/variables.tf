@@ -32,10 +32,3 @@ variable "admin_name" {
   type        = string
   default     = "palja"
 }
-
-# Github Secrets를 통해 배포될 때 주입
-variable "db_password" {
-  description = "PostgreSQL DB 관리자 비밀번호"
-  type        = string
-  sensitive   = true
-}

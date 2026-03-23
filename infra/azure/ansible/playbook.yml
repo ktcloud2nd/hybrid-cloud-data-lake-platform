@@ -1,20 +1,25 @@
 ---
-- name: Azure Kafka 클러스터 및 컨슈머 배포
-  hosts: azure_vms  # azure_hosts.ini에서 정의한 모든 VM 그룹
-  become: yes       # sudo 권한 사용 (도커 실행 및 폴더 생성 권한)
-  gather_facts: yes # 서버의 IP 등 기본 정보 수집 (설정에 필요)
-
-  tasks:
-    - name: Docker 설치 여부 확인
-      command: docker --version
-      register: docker_check
-      ignore_errors: yes
-
-    - name: Docker가 없을 경우 작업 중단
-      fail:
-        msg: "대상 서버에 Docker가 설치되어 있지 않습니다. 먼저 Docker를 설치해주세요."
-      when: docker_check.failed
-
-    # 실제 Kafka 배포 로직 (Role 호출)
+# 공통 환경 세팅
+- name: 공통 환경 세팅 (Docker 및 의존성 설치)
+  hosts: azure_vms
+  become: yes
+  gather_facts: yes
+  
   roles:
-    - kafka-broker # roles/kafka-broker 폴더 내용 실행
+    - docker
+
+# Broker 전용 배포
+- name: Azure Kafka Broker 배포
+  hosts: azure_broker
+  become: yes
+  gather_facts: yes
+  roles:
+    - kafka-broker
+
+# Consumer 전용 배포
+- name: Azure Kafka Consumer 배포
+  hosts: azure_consumer
+  become: yes
+  gather_facts: yes
+  roles:
+    - kafka-consumer
