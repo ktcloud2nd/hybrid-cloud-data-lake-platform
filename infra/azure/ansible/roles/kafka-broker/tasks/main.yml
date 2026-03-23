@@ -26,7 +26,7 @@
 - name: Kafka 서비스 안정화 대기
   pause:
     seconds: 30
-  prompt: "컨테이너가 뜬 후 내부적으로 브로커들이 서로 인식할 시간이 필요합니다."
+    prompt: "컨테이너가 뜬 후 내부적으로 브로커들이 서로 인식할 시간이 필요합니다."
 
 - name: raw_topic 생성 (원본 데이터 수집용)
   shell:
