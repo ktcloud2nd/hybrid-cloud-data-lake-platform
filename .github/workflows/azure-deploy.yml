@@ -57,6 +57,19 @@ jobs:
         echo "AZURE_STORAGE_NAME=${STORAGE_NAME}" >> $GITHUB_ENV
         echo "AZURE_STORAGE_KEY=${STORAGE_KEY}" >> $GITHUB_ENV
 
+    # SSH 개인 키 설정 (Ansible 접속용)
+    - name: Set up SSH Key
+      if: ${{ github.event.inputs.action == 'apply' }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+
+    # SSH 서비스 준비 기다림
+    - name: Wait for SSH service to boot
+      if: ${{ github.event.inputs.action == 'apply' }}
+      run: sleep 30
+
     # Inventory 생성
     - name: Generate Ansible Inventory
       if: ${{ github.event.inputs.action == 'apply' }}
@@ -78,6 +91,7 @@ jobs:
 
         [azure_vms:vars]
         ansible_user=${VM_USER}
+        ansible_ssh_private_key_file=~/.ssh/id_rsa
         ansible_python_interpreter=/usr/bin/python3
         EOF
 
