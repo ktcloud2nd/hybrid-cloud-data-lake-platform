@@ -41,6 +41,9 @@
         connector.class: "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector"
         tasks.max: "1"
         topics: "raw_topic"
+        key.converter: "org.apache.kafka.connect.storage.StringConverter"
+        value.converter: "org.apache.kafka.connect.json.JsonConverter"
+        value.converter.schemas.enable: "false"
         # Broker 주소 추가
         confluent.topic.bootstrap.servers: "{{ broker_internal_ip }}:9094,{{ broker_internal_ip }}:9095,{{ broker_internal_ip }}:9096"
         # Azure 스토리지 정보 (Terraform Output에서 넘어온 변수 활용)
@@ -67,6 +70,9 @@
         connector.class: "io.confluent.connect.s3.S3SinkConnector"
         tasks.max: "1"
         topics: "cleansed_topic"
+        key.converter: "org.apache.kafka.connect.storage.StringConverter"
+        value.converter: "org.apache.kafka.connect.json.JsonConverter"
+        value.converter.schemas.enable: "false"
         # Broker 주소 추가
         confluent.topic.bootstrap.servers: "{{ broker_internal_ip }}:9094,{{ broker_internal_ip }}:9095,{{ broker_internal_ip }}:9096"
         s3.bucket.name: "{{ s3_bucket_name }}"
