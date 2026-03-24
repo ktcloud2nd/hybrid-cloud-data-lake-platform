@@ -50,13 +50,10 @@
         key.converter: "org.apache.kafka.connect.storage.StringConverter"
         value.converter: "org.apache.kafka.connect.json.JsonConverter"
         value.converter.schemas.enable: "false"
-        confluent.topic.bootstrap.servers: "{{ broker_internal_ip }}:9094,{{ broker_internal_ip }}:9095,{{ broker_internal_ip }}:9096"
-        # Azure 설정
-        azblob.account.name: "{{ azure_storage_account_name }}"
-        azblob.account.key: "{{ azure_storage_primary_key }}"
-        azblob.container.name: "raw-topic-container"
-        storage.class: "io.confluent.connect.azure.blob.storage.AzureBlobStorage"
-        format.class: "io.confluent.connect.azure.blob.format.json.JsonFormat" # JSON으로 통일 권장
+        azure.storage.connection.string: "DefaultEndpointsProtocol=https;AccountName={{ azure_storage_account_name }};AccountKey={{ azure_storage_primary_key }};EndpointSuffix=core.windows.net"
+        azure.storage.container.name: "raw-topic-container"
+        format.output.fields: "value"
+        format.output.type: "json"
         flush.size: "100"
     status_code: [201, 409]
   register: connect_result
@@ -78,11 +75,8 @@
         key.converter: "org.apache.kafka.connect.storage.StringConverter"
         value.converter: "org.apache.kafka.connect.json.JsonConverter"
         value.converter.schemas.enable: "false"
-        # Broker 주소 추가
-        confluent.topic.bootstrap.servers: "{{ broker_internal_ip }}:9094,{{ broker_internal_ip }}:9095,{{ broker_internal_ip }}:9096"
         s3.bucket.name: "{{ s3_bucket_name }}"
         s3.region: "ap-northeast-2"
-        # AWS 인증 정보 (Github Secrets에서 넘어온 변수 활용)
         aws.access.key.id: "{{ aws_access_key }}"
         aws.secret.access.key: "{{ aws_secret_key }}"
         format.class: "io.confluent.connect.s3.format.json.JsonFormat" # 분석용 JSONL

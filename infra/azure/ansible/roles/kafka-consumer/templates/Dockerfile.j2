@@ -3,30 +3,11 @@ FROM confluentinc/cp-kafka-connect:7.5.0
 USER root
 RUN microdnf update && microdnf install -y unzip && microdnf clean all
 
-# 1. ZIP 파일 복사
-COPY azure-part1.zip azure-part2.zip s3.zip /tmp/
+# Azure만 Aiven ZIP으로 수동 설치 (라이선스 에러 회피용)
+COPY aiven-azure-blob.zip /tmp/
+RUN mkdir -p /usr/share/confluent-hub-components/azure-blob-aiven/lib && \
+    unzip -o -j /tmp/aiven-azure-blob.zip "*/lib/*.jar" -d /usr/share/confluent-hub-components/azure-blob-aiven/lib/
 
-# 2. [핵심 변경] 플러그인 전용 폴더가 아니라 엔진 공용 폴더(/usr/share/java/kafka/)에 직접 해제
-# 이렇게 하면 엔진이 켜질 때 "어? 이건 내 원래 부품이네?" 하고 아무 의심 없이 로드합니다.
-RUN unzip -o -j /tmp/azure-part1.zip "*/lib/*.jar" -d /usr/share/java/kafka/ && \
-    unzip -o -j /tmp/azure-part2.zip "*/lib/*.jar" -d /usr/share/java/kafka/ && \
-    unzip -o -j /tmp/s3.zip "*/lib/*.jar" -d /usr/share/java/kafka/
-
-# 3. 형식상 플러그인 경로에 manifest만 둡니다 (엔진이 찾기는 해야 하니까요)
-RUN mkdir -p /usr/share/confluent-hub-components/azure-blob && \
-    mkdir -p /usr/share/confluent-hub-components/s3 && \
-    unzip -o -j /tmp/azure-part1.zip "*/manifest.json" -d /usr/share/confluent-hub-components/azure-blob/ && \
-    unzip -o -j /tmp/s3.zip "*/manifest.json" -d /usr/share/confluent-hub-components/s3/
-
-# 4. 권한 부여 및 정리 (엔진 심장부 폴더까지 소유권 변경)
-RUN chown -R appuser:appuser /usr/share/java/kafka /usr/share/confluent-hub-components && \
-    chmod -R 755 /usr/share/java/kafka && \
-    rm /tmp/*.zip
+RUN chown -R appuser:appuser /usr/share/confluent-hub-components && rm /tmp/*.zip
 
 USER appuser
-
-# 5. [치트키] 자바 엔진이 시동 걸 때 이 폴더의 모든 JAR를 무조건 읽도록 강제합니다.
-ENV CLASSPATH="/usr/share/java/kafka/*"
-ENV CONNECT_PLUGIN_PATH="/usr/share/java,/usr/share/confluent-hub-components"
-
-CMD ["/etc/confluent/docker/run"]

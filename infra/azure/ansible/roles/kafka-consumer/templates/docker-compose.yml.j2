@@ -39,16 +39,22 @@ services:
       CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
       
-      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
-
+      CONNECT_PLUGIN_PATH: "/usr/share/confluent-hub-components"
+      
       # AWS S3에 접근하기 위한 값
-      AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-      AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-      AWS_REGION: "{{ aws_region }}"
+      # AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+      # AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+      # AWS_REGION: "{{ aws_region }}"
 
       # Azure Blob Storage에 접근하기 위한 값
-      AZURE_STORAGE_ACCOUNT_NAME: "{{ azure_storage_account_name }}"
-      AZURE_STORAGE_ACCOUNT_KEY: "{{ azure_storage_primary_key }}"
+      # AZURE_STORAGE_ACCOUNT_NAME: "{{ azure_storage_account_name }}"
+      # AZURE_STORAGE_ACCOUNT_KEY: "{{ azure_storage_primary_key }}"
 
-    command: /etc/confluent/docker/run
+    # S3 커넥터는 Confluent 허브에서 정석대로 설치
+    command: 
+      - bash
+      - -c
+      - |
+        confluent-hub install --no-prompt confluentinc/kafka-connect-s3:latest
+        /etc/confluent/docker/run
     restart: always
