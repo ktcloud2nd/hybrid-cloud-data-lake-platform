@@ -142,6 +142,7 @@ jobs:
 
         ansible-playbook -i azure_hosts.ini ../ansible/playbook.yml \
           -e "dockerhub_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+          -e "broker_public_ip=${BROKER_IP}" \
           -e "broker_internal_ip=${BROKER_PRIV_IP}" \
           -e "aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
           -e "aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
