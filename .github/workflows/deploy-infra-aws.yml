@@ -167,6 +167,9 @@ jobs:
         working-directory: ${{ github.workspace }}/infra/aws/terraform/compute
         run: terraform apply -input=false -auto-approve
 
+      - name: Ansible 인벤토리 파일 생성 확인
+        run: test -f infra/aws/ansible/inventory/hosts.ini && echo "hosts.ini 생성 확인됨" || (echo "hosts.ini 파일이 존재하지 않습니다" && exit 1)
+
       - name: Data Init
         working-directory: ${{ github.workspace }}/infra/aws/terraform/data
         run: >-
@@ -187,6 +190,7 @@ jobs:
         with:
           name: ansible-inventory
           path: infra/aws/ansible/inventory/hosts.ini
+          if-no-files-found: error
 
   ansible-k3s-setup:
     name: Ansible K3s Cluster Setup
