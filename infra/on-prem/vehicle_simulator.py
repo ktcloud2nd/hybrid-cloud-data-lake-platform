@@ -35,7 +35,7 @@ producer = KafkaProducer(
 LAT_MIN, LAT_MAX = 37.40, 37.70
 LON_MIN, LON_MAX = 126.70, 127.20
 
-# 100대의 차량 초기 상태 생성
+#50대의 차량 초기 상태 생성
 vehicles = [
     {
         "vehicle_id": f"car_{i+1}",
@@ -46,7 +46,7 @@ vehicles = [
         "engine_on": True,
         "fuel": round(random.uniform(30, 100), 2)
     }
-    for i in range(100)
+    for i in range(50)
 ]
 
 def clamp(value, min_value, max_value):
@@ -78,7 +78,7 @@ def simulate_vehicle(vehicle):
         if roll < 0.05: # 미수신 (30초 잠수)
             time.sleep(30)
             continue
-        elif roll < 0.08: # 폭주 (짧은 간격 5회 연속 전송)
+        elif roll < 0.08: # 폭주 (짧은 간격(1초 내) 5회 연속 전송)
             for _ in range(5):
                 send_to_kafka(vehicle, 1, 1)
                 time.sleep(0.1)

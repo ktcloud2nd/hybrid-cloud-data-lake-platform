@@ -1,29 +1,76 @@
--- Vehicle status serving table
-CREATE TABLE vehicle_stats (
-    vehicle_id VARCHAR(50) PRIMARY KEY,
-    driver_code VARCHAR(50),
-    timestamp TIMESTAMP,
-    lat DOUBLE PRECISION,
-    lon DOUBLE PRECISION,
+-- 차종 코드 테이블: 부모
+CREATE TABLE IF NOT EXISTS model_codes (
+    code          INT PRIMARY KEY,      -- 1, 2, 3, 4
+    model_name    VARCHAR(50) NOT NULL, -- 차종
+    image_url     TEXT                  -- S3 버킷 이미지 경로
+);
+
+INSERT INTO model_codes (code, model_name, image_url) VALUES
+(1, 'Avante', 'https://ktcloud2nd-dev-data.s3.ap-northeast-2.amazonaws.com/models/avante.png'),
+(2, 'Granduer', 'https://ktcloud2nd-dev-data.s3.ap-northeast-2.amazonaws.com/models/granduer.png'),
+(3, 'Santafe', 'https://ktcloud2nd-dev-data.s3.ap-northeast-2.amazonaws.com/models/santafe.png'),
+(4, 'Tucson', 'https://ktcloud2nd-dev-data.s3.ap-northeast-2.amazonaws.com/models/tucson.png')
+ON CONFLICT (code) DO NOTHING;
+
+-- 사용자 테이블: 자식
+CREATE TABLE IF NOT EXISTS vehicle_master (
+    id            SERIAL PRIMARY KEY,
+    user_id       VARCHAR(50) NOT NULL,
+    password      VARCHAR(255) NOT NULL,
+    user_name     VARCHAR(100),
+    vehicle_id    VARCHAR(50) UNIQUE,
+    model_code    INT REFERENCES model_codes(code) -- 외래키 참조
+);
+
+INSERT INTO vehicle_master (user_id, password, user_name, vehicle_id, model_code) VALUES
+('user01', 'pass01!', '강동훈', 'car_1', 1),
+('user02', 'pass02!', '이정수', 'car_2', 2),
+('user03', 'pass03!', '박서현', 'car_3', 3),
+('user04', 'pass04!', '최윤지', 'car_4', 4)
+ON CONFLICT (vehicle_id) DO NOTHING;
+
+-- 차량 상태 테이블 (사용자 대시보드: 내 차 상태 / 운영자 대시보드: 전체 목록)
+CREATE TABLE IF NOT EXISTS vehicle_stats (
+    -- 식별자
+    vehicle_id VARCHAR(50) PRIMARY KEY, -- vehicle_id
+    
+    -- 위치 및 주행 정보
+    latitude NUMERIC(10, 7),            -- lat
+    longitude NUMERIC(10, 7),           -- lon
+    speed INT,                          -- speed
+    fuel_level NUMERIC(5,2),            -- fuel
+    
+    -- 시동 및 상태
+    engine_on BOOLEAN,                  -- engine_on
+    mode INT,                           -- mode
+    event_type INT                      -- event_type
+
+    -- 시간 정보
+    occurred_at TIMESTAMPTZ,            -- timestamp
+    received_at TIMESTAMPTZ             -- server_timestamp
+);
+
+-- 이상 탐지 테이블 (운영자 대시보드: 이상 탐지)
+CREATE TABLE IF NOT EXISTS vehicle_alerts (
+    id SERIAL PRIMARY KEY,
+
+    -- 식별자
+    vehicle_id VARCHAR(50),
+
+    -- 급가속 / 급감속
     speed INT,
-    engine_on BOOLEAN,
-    fuel NUMERIC(5,2)
-);
 
--- Recent alert serving table
-CREATE TABLE recent_alert (
-    alert_id SERIAL PRIMARY KEY,
-    vehicle_id VARCHAR(50),
-    driver_code VARCHAR(50),
-    timestamp TIMESTAMP,
-    alert_type VARCHAR(50),
-    message TEXT,
-    CONSTRAINT recent_alert_unique UNIQUE (vehicle_id, timestamp, alert_type)
-);
+    -- 연료 소진
+    fuel_level NUMERIC(5,2),
 
--- User to vehicle mapping table
-CREATE TABLE user_vehicle_mapping (
-    driver_code VARCHAR(50),
-    vehicle_id VARCHAR(50),
-    PRIMARY KEY (driver_code, vehicle_id)
+    -- 비정상 위치 (탐지 방법: 지오펜싱 / 이동 거리 계산)
+    latitude NUMERIC(10, 7),
+    longitude NUMERIC(10, 7),
+
+    -- 급가속 / 급감속
+    -- 짧은 시간 내 과도한 알림 발생
+    occurred_at TIMESTAMPTZ,
+
+    -- 일정 시간 동안 데이터 미수신
+    received_at TIMESTAMPTZ,
 );
