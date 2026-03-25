@@ -131,6 +131,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
       - name: Prepare compute tfvars from example
         working-directory: ${{ github.workspace }}/infra/aws/terraform/compute
@@ -167,27 +168,6 @@ jobs:
         working-directory: ${{ github.workspace }}/infra/aws/terraform/compute
         run: terraform apply -input=false -auto-approve
 
-      - name: Ansible 인벤토리 hosts.ini 생성
-        working-directory: ${{ github.workspace }}/infra/aws/terraform/compute
-        run: |
-          MASTER_A_ID=$(terraform output -raw master_a_instance_id)
-          MASTER_C_ID=$(terraform output -raw master_c_instance_id)
-          MASTER_A_IP=$(terraform output -raw master_a_private_ip)
-          MASTER_C_IP=$(terraform output -raw master_c_private_ip)
-          NLB_DNS=$(terraform output -raw k3s_nlb_dns)
-          mkdir -p ${{ github.workspace }}/infra/aws/ansible/inventory
-          INV=${{ github.workspace }}/infra/aws/ansible/inventory/hosts.ini
-          printf '[all:vars]\n' > "$INV"
-          printf 'ansible_user=ubuntu\n' >> "$INV"
-          printf 'ansible_ssh_common_args='"'"'-o StrictHostKeyChecking=no -o ProxyCommand="aws ssm start-session --target %%h --document-name AWS-StartSSHSession --parameters portNumber=%%p"'"'"'\n' >> "$INV"
-          printf 'nlb_dns=%s\n' "$NLB_DNS" >> "$INV"
-          printf 'k3s_shared_token=${{ secrets.K3S_TOKEN }}\n' >> "$INV"
-          printf '\n[masters]\n' >> "$INV"
-          printf 'master_a ansible_host=%s private_ip=%s\n' "$MASTER_A_ID" "$MASTER_A_IP" >> "$INV"
-          printf 'master_c ansible_host=%s private_ip=%s\n' "$MASTER_C_ID" "$MASTER_C_IP" >> "$INV"
-          printf '\n[k8s_cluster:children]\nmasters\n' >> "$INV"
-          echo "hosts.ini 생성 완료:" && cat "$INV"
-
       - name: Data Init
         working-directory: ${{ github.workspace }}/infra/aws/terraform/data
         run: >-
@@ -202,6 +182,34 @@ jobs:
       - name: Data Apply
         working-directory: ${{ github.workspace }}/infra/aws/terraform/data
         run: terraform apply -input=false -auto-approve
+
+      - name: Ansible 인벤토리 hosts.ini 생성
+        run: |
+          MASTER_A_ID=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_a_instance_id)
+          MASTER_C_ID=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_c_instance_id)
+          MASTER_A_IP=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_a_private_ip)
+          MASTER_C_IP=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_c_private_ip)
+          NLB_DNS=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw k3s_nlb_dns)
+          DB_ENDPOINT=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_endpoint)
+          DB_PORT=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_port)
+          DB_NAME=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_name)
+          DB_USERNAME=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_username)
+          mkdir -p ${{ github.workspace }}/infra/aws/ansible/inventory
+          INV=${{ github.workspace }}/infra/aws/ansible/inventory/hosts.ini
+          printf '[all:vars]\n' > "$INV"
+          printf 'ansible_user=ubuntu\n' >> "$INV"
+          printf 'ansible_ssh_common_args='"'"'-o StrictHostKeyChecking=no -o ProxyCommand="aws ssm start-session --target %%h --document-name AWS-StartSSHSession --parameters portNumber=%%p"'"'"'\n' >> "$INV"
+          printf 'nlb_dns=%s\n' "$NLB_DNS" >> "$INV"
+          printf 'k3s_shared_token=${{ secrets.K3S_TOKEN }}\n' >> "$INV"
+          printf 'db_endpoint=%s\n' "$DB_ENDPOINT" >> "$INV"
+          printf 'db_port=%s\n' "$DB_PORT" >> "$INV"
+          printf 'db_name=%s\n' "$DB_NAME" >> "$INV"
+          printf 'db_username=%s\n' "$DB_USERNAME" >> "$INV"
+          printf '\n[masters]\n' >> "$INV"
+          printf 'master_a ansible_host=%s private_ip=%s\n' "$MASTER_A_ID" "$MASTER_A_IP" >> "$INV"
+          printf 'master_c ansible_host=%s private_ip=%s\n' "$MASTER_C_ID" "$MASTER_C_IP" >> "$INV"
+          printf '\n[k8s_cluster:children]\nmasters\n' >> "$INV"
+          echo "hosts.ini 생성 완료:" && cat "$INV"
 
       - name: Ansible 인벤토리 아티팩트 업로드
         uses: actions/upload-artifact@v4

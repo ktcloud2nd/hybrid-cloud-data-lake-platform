@@ -23,6 +23,11 @@ output "db_name" {
   value       = aws_db_instance.this.db_name
 }
 
+output "db_username" {
+  description = "Master username for RDS."
+  value       = aws_db_instance.this.username
+}
+
 output "db_subnet_group_name" {
   description = "DB subnet group name."
   value       = aws_db_subnet_group.this.name
