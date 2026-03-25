@@ -1,3 +1,13 @@
+output "master_a_instance_id" {
+  description = "EC2 instance ID for the K3s control-plane node in Private-App-A (used for SSM)."
+  value       = aws_instance.k3s_master_a.id
+}
+
+output "master_c_instance_id" {
+  description = "EC2 instance ID for the K3s control-plane node in Private-App-C (used for SSM)."
+  value       = aws_instance.k3s_master_c.id
+}
+
 output "master_a_private_ip" {
   description = "Static private IP for the K3s control-plane node in Private-App-A."
   value       = aws_instance.k3s_master_a.private_ip
