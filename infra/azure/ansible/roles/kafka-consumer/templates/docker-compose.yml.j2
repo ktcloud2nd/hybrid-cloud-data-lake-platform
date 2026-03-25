@@ -10,8 +10,8 @@ services:
     working_dir: /app
     command: sh -c "pip install --no-cache-dir -r requirements.txt && python processor.py"
     environment:
-      # 9092 대신 외부로 노출된 9094 포트를 사용
-      KAFKA_BROKER: "{{ broker_internal_ip }}:9094"
+      # 9094(외부용) 대신 내부 통로인 9091 사용
+      KAFKA_BROKER: "{{ broker_internal_ip }}:9091"
   # Kafka Connect
   kafka-connect:
     image: {{ dockerhub_username }}/custom-kafka-connect:latest # confluentinc/cp-kafka-connect:7.5.0
@@ -21,8 +21,9 @@ services:
     environment:
       KAFKA_HEAP_OPTS: "-Xmx512M -Xms512M"
 
-      # 9094~9096
-      CONNECT_BOOTSTRAP_SERVERS: "{{ broker_internal_ip }}:9094,{{ broker_internal_ip }}:9095,{{ broker_internal_ip }}:9096"
+      # 9091~9093: Broker VM의 내부 IP와 연결된 문 (같은 Azure VNET 안에 있는 Consumer VM은 이 문으로 들어오는 게 훨씬 빠르고 안전함)
+      # 9094~9096: Broker VM의 공인 IP와 연결된 문 (온프레미스 시뮬레이터가 들어오는 전용 통로)
+      CONNECT_BOOTSTRAP_SERVERS: "{{ broker_internal_ip }}:9091,{{ broker_internal_ip }}:9092,{{ broker_internal_ip }}:9093"
       CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: "consumer-connect-cluster"

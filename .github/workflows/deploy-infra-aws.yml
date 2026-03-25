@@ -1,22 +1,15 @@
 name: deploy-infra-aws
 
 on:
-  push:
-    branches:
-      - main
-      - aws-cicd
-    paths:
-      - "infra/aws/terraform/**"
-      - "infra/aws/ansible/**"
-      - ".github/workflows/deploy-infra-aws.yml"
-
-  pull_request:
-    paths:
-      - "infra/aws/terraform/**"
-      - "infra/aws/ansible/**"
-      - ".github/workflows/deploy-infra-aws.yml"
-
   workflow_dispatch:
+    inputs:
+      action:
+        description: "실행할 작업을 선택하세요."
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
 
 permissions:
   contents: read
@@ -36,6 +29,7 @@ jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+    if: ${{ inputs.action == 'apply' }}
 
     steps:
       - name: Checkout repository
@@ -114,7 +108,7 @@ jobs:
     name: Terraform Apply
     runs-on: ubuntu-latest
     needs: terraform-plan
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/aws-cicd' || github.ref == 'refs/heads/feature/aws-k3s') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: ${{ inputs.action == 'apply' }}
 
     steps:
       - name: Checkout repository
@@ -226,11 +220,78 @@ jobs:
           path: infra/aws/ansible/inventory/hosts.ini
           if-no-files-found: error
 
+  terraform-destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    if: ${{ inputs.action == 'destroy' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Prepare compute tfvars from example
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/compute
+        shell: bash
+        run: |
+          cp terraform.tfvars.example terraform.tfvars
+          sed -i 's|^k3s_shared_token *=.*|k3s_shared_token = "${{ secrets.K3S_TOKEN }}"|' terraform.tfvars
+
+      - name: Prepare data tfvars from example
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/data
+        shell: bash
+        run: |
+          cp terraform.tfvars.example terraform.tfvars
+
+      - name: Compute Init
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/compute
+        run: >-
+          terraform init -input=false -reconfigure
+          -backend-config="access_key=${{ secrets.AWS_TFSTATE_S3_ACCESS_KEY }}"
+          -backend-config="secret_key=${{ secrets.AWS_TFSTATE_S3_SECRET_ACCESS_KEY }}"
+
+      - name: Compute Destroy
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/compute
+        run: terraform destroy -input=false -auto-approve
+
+      - name: Data Init
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/data
+        run: >-
+          terraform init -input=false -reconfigure
+          -backend-config="access_key=${{ secrets.AWS_TFSTATE_S3_ACCESS_KEY }}"
+          -backend-config="secret_key=${{ secrets.AWS_TFSTATE_S3_SECRET_ACCESS_KEY }}"
+
+      - name: Data Destroy
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/data
+        run: terraform destroy -input=false -auto-approve
+
+      - name: Network Init
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/network
+        run: >-
+          terraform init -input=false -reconfigure
+          -backend-config="access_key=${{ secrets.AWS_TFSTATE_S3_ACCESS_KEY }}"
+          -backend-config="secret_key=${{ secrets.AWS_TFSTATE_S3_SECRET_ACCESS_KEY }}"
+
+      - name: Network Destroy
+        working-directory: ${{ github.workspace }}/infra/aws/terraform/network
+        run: terraform destroy -input=false -auto-approve
+
   ansible-k3s-setup:
     name: Ansible K3s Cluster Setup
     runs-on: ubuntu-latest
     needs: terraform-apply
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/aws-cicd' || github.ref == 'refs/heads/feature/aws-k3s') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: ${{ inputs.action == 'apply' }}
 
     steps:
       - name: 레포지토리 체크아웃

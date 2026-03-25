@@ -54,9 +54,17 @@
    - **컨테이너 가동**
      ```bash
      # 최신 이미지 Pull 및 컨테이너 실행
-     docker-compose pull && docker-compose up -d
+     docker compose pull && docker compose up -d
 
    - **정상 작동 확인**<br>
      데이터가 실시간으로 전송되는지 로그를 확인합니다.
      ```bash
-     docker logs -f vehicle-simulator
+     docker logs -tf vehicle-simulator 2>&1 | cat -n
+
+   - **데이터 전송 일시 중단**
+     ```bash
+     docker compose stop
+     
+   - **데이터 전송 다시 시작**
+     ```bash
+     docker compose start
