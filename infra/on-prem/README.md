@@ -36,10 +36,10 @@
    # 폴더 생성 및 이동
    mkdir -p ~/vehicle-project && cd ~/vehicle-project
 
-   # 도커 컴포즈 파일 생성 (복사 후 i 눌러 붙여넣기 -> Esc -> :wq)
+   # 도커 컴포즈 파일 생성 (복사 후 붙여넣기 -> :wq)
    vi docker-compose.yml
 
-   # 시뮬레이터 파이썬 파일 생성 (복사 후 i 눌러 붙여넣기 -> Esc -> :wq)
+   # 시뮬레이터 파이썬 파일 생성 (복사 후 붙여넣기 -> :wq)
    vi vehicle_simulator.py
 
 3. **실행 및 모니터링**<br>
