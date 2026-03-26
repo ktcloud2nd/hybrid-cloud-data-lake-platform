@@ -69,7 +69,7 @@
       project: default
       source:
         repoURL: {{ argocd_repo_url }}
-        targetRevision: main
+        targetRevision: feature/aws-k3s
         path: k8s/operator-app
         directory:
           exclude: '*-secret.yml'
@@ -97,7 +97,7 @@
       project: default
       source:
         repoURL: {{ argocd_repo_url }}
-        targetRevision: main
+        targetRevision: feature/aws-k3s
         path: k8s/user-app
         directory:
           exclude: '*-secret.yml'
