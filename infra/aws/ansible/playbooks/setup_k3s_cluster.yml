@@ -27,3 +27,9 @@
     - ../vault/vault.yml
   roles:
     - prometheus
+
+- name: ArgoCD 설치 및 Application 등록
+  hosts: masters
+  become: yes
+  roles:
+    - argocd
