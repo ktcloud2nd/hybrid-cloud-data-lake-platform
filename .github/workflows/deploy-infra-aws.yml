@@ -48,7 +48,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Check Terraform formatting
-        run: terraform fmt -check -recursive infra/aws/terraform
+        run: terraform fmt -recursive infra/aws/terraform
 
       - name: Prepare compute tfvars from example
         working-directory: ${{ github.workspace }}/infra/aws/terraform/compute

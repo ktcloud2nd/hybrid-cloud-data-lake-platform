@@ -79,5 +79,6 @@ output "security_group_ids" {
     alb       = aws_security_group.alb.id
     k3s_nodes = aws_security_group.k3s_nodes.id
     db        = aws_security_group.db.id
+    #lambda    = aws_security_group.lambda.id
   }
 }
