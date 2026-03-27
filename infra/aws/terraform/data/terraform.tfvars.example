@@ -5,11 +5,11 @@ network_state_region = "ap-northeast-2"
 # network_state_access_key = "change-me"
 # network_state_secret_key = "change-me"
 
-name_prefix = "ktcloud2nd-dev"
+name_prefix = "ktcloud2nd"
 
 db_name     = "vehicle_db"
-db_username = "dbadmin"
-db_password = "change-me"
+db_username = "admin"
+db_password = "admin1234"
 
 instance_class          = "db.t3.micro"
 allocated_storage       = 20

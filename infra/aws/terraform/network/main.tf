@@ -254,14 +254,14 @@ resource "aws_security_group" "db" {
     security_groups = [aws_security_group.k3s_nodes.id]
   }
 
-  # 람다 함수 허용
-  #ingress {
-  #  description     = "Allow PostgreSQL from Lambda"
-  #  from_port       = 5432
-  #  to_port         = 5432
-  #  protocol        = "tcp"
-  #  security_groups = [aws_security_group.lambda.id]
-  #}
+  # Azure Consumer VM 허용
+  ingress {
+    description = "Allow PostgreSQL from Azure Consumer VM"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/32"] # 데이터 전송 테스트를 위해 임시로 개방
+  }
 
   egress {
     description = "Allow all outbound traffic"
@@ -321,20 +321,3 @@ resource "aws_lb_listener" "http" {
     target_group_arn = aws_lb_target_group.worker_http.arn
   }
 }
-# 람다 전용 보안 그룹
-#resource "aws_security_group" "lambda" {
-#  name        = "${var.name_prefix}-lambda-sg"
-#  description = "Security group for the data processor lambda"
-#  vpc_id      = aws_vpc.this.id
-
-#  egress {
-#    from_port   = 0
-#    to_port     = 0
-#    protocol    = "-1"
-#    cidr_blocks = ["0.0.0.0/0"]
-#  }
-
-#  tags = {
-#    Name = "${var.name_prefix}-lambda-sg"
-#  }
-#}
