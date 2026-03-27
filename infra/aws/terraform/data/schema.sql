@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS vehicle_stats (
     fuel_level NUMERIC(5, 2),
     event_type INT,
     mode INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_vehicle_timestamp ON vehicle_stats(vehicle_id, timestamp DESC);
@@ -59,7 +58,6 @@ CREATE TABLE IF NOT EXISTS vehicle_anomaly_alerts (
     description TEXT,                 -- 상황 제목 (description)
     evidence VARCHAR(255),            -- 핵심 수치 증거 (evidence)
     occurred_at BIGINT,               -- 실제 발생 시각 (occurred_at)
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_vehicle_timestamp ON vehicle_stats(vehicle_id, timestamp DESC);

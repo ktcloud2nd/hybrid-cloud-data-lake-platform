@@ -1,8 +1,3 @@
-output "s3_bucket_name" {
-  description = "S3 bucket name for processed data."
-  value       = aws_s3_bucket.data.id
-}
-
 output "db_instance_identifier" {
   description = "RDS instance identifier."
   value       = aws_db_instance.postgresql.identifier
