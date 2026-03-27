@@ -79,7 +79,7 @@
 
 - name: operator-app ArgoCD Application 생성
   shell: |
-    kubectl apply -f - <<EOF
+    kubectl apply --validate=false -f - <<EOF
     apiVersion: argoproj.io/v1alpha1
     kind: Application
     metadata:
@@ -109,7 +109,7 @@
 
 - name: user-app ArgoCD Application 생성
   shell: |
-    kubectl apply -f - <<EOF
+    kubectl apply --validate=false -f - <<EOF
     apiVersion: argoproj.io/v1alpha1
     kind: Application
     metadata:
