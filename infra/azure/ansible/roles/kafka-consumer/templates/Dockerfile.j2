@@ -1,20 +1,27 @@
 FROM confluentinc/cp-kafka-connect:7.5.0
 
 USER root
-# 1. 필수 도구 설치 (curl, unzip만 있으면 됩니다)
+# 필수 도구 설치
 RUN microdnf update && \
     microdnf install -y unzip curl ca-certificates && \
     microdnf clean all
 
-# 2. 검증된 Aiven Azure Sink 커넥터 다운로드 (v3.4.2)
+# Aiven Azure Sink 커넥터 다운로드 (v3.4.2)
 RUN curl -L "https://github.com/Aiven-Open/cloud-storage-connectors-for-apache-kafka/releases/download/v3.4.2/azure-sink-connector-for-apache-kafka-3.4.2.zip" -o /tmp/azure-aiven.zip
 
-# 3. [핵심 수정] unzip -j 옵션으로 내부 폴더 구조 무시하고 JAR만 쏙 뽑기
-# -j 옵션은 압축 파일 내의 폴더 구조를 무시하고 모든 파일을 지정된 디렉토리에 바로 풉니다.
+# unzip -j 옵션으로 내부 폴더 구조 무시하고 JAR만 뽑기
 RUN mkdir -p /usr/share/confluent-hub-components/azure-blob-aiven/lib && \
     unzip -o -j /tmp/azure-aiven.zip "*.jar" -d /usr/share/confluent-hub-components/azure-blob-aiven/lib/
 
-# 4. 권한 정리 및 임시파일 삭제
+# --------------- 추가 ---------------
+# JDBC Sink 커넥터 설치
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.7.4
+
+# DB 드라이버 (PostgreSQL 기준)
+RUN curl -L "https://jdbc.postgresql.org/download/postgresql-42.7.2.jar" -o /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/lib/postgresql-42.7.2.jar
+# -----------------------------------
+
+# 권한 정리 및 임시파일 삭제
 RUN chown -R appuser:appuser /usr/share/confluent-hub-components && \
     rm /tmp/azure-aiven.zip
 

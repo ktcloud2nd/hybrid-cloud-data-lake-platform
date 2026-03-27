@@ -50,6 +50,17 @@
   run_once: true
   ignore_errors: yes
 
+- name: anomaly_topic 생성 (이상 탐지 경고용)
+  shell:
+    cmd: >
+      docker exec kafka1 kafka-topics --create 
+      --topic anomaly_topic 
+      --partitions 3 
+      --replication-factor 3 
+      --bootstrap-server localhost:9091
+  run_once: true
+  ignore_errors: yes
+
 - name: 생성된 토픽 리스트 확인 (디버깅용)
   shell:
     cmd: "docker exec kafka1 kafka-topics --list --bootstrap-server localhost:9091"

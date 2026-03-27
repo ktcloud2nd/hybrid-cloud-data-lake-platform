@@ -44,7 +44,7 @@ vehicles = [
         "lon": round(random.uniform(LON_MIN, LON_MAX), 6),
         "speed": 0,
         "engine_on": True,
-        "fuel": round(random.uniform(30, 100), 2)
+        "fuel_level": round(random.uniform(30, 100), 2)
     }
     for i in range(50)
 ]
@@ -53,24 +53,24 @@ def clamp(value, min_value, max_value):
     return max(min_value, min(value, max_value))
 
 def send_to_kafka(vehicle, event_type, mode):
-    """카프카로 데이터를 전송"""
+    """ 카프카로 데이터 전송 """
     payload = {
         "event_type": event_type,
         "mode": mode,
         "vehicle_id": vehicle["vehicle_id"],
         "driver_id": vehicle["driver_id"],
-        "timestamp": int(time.time()),
+        "timestamp": int(time.time()), # AWS에서 표준 표기로 정제
         "lat": vehicle["lat"],
         "lon": vehicle["lon"],
         "speed": vehicle["speed"],
         "engine_on": vehicle["engine_on"],
-        "fuel": round(vehicle["fuel"], 2)
+        "fuel_level": round(vehicle["fuel_level"], 2)
     }
     # 차량 ID를 키로 지정하여 메시지 순서 보장
     producer.send("raw_topic", key=vehicle["vehicle_id"].encode('utf-8'), value=payload)
 
 def simulate_vehicle(vehicle):
-    """차량별 독립 스레드에서 실행되는 시뮬레이션 로직"""
+    """ 차량별 독립 스레드에서 실행되는 시뮬레이션 로직 """
     while True:
         roll = random.random()
 
@@ -98,7 +98,7 @@ def simulate_vehicle(vehicle):
         if vehicle["engine_on"]:
             if random.random() < 0.7: # 주행 중 (Driving)
                 vehicle["speed"] = random.randint(30, 100)
-                vehicle["fuel"] = max(0, vehicle["fuel"] - random.uniform(0.1, 0.5))
+                vehicle["fuel_level"] = max(0, vehicle["fuel_level"] - random.uniform(0.1, 0.5))
                 vehicle["lat"] += random.uniform(-0.001, 0.001) * (vehicle["speed"] / 50)
                 vehicle["lon"] += random.uniform(-0.001, 0.001) * (vehicle["speed"] / 50)
                 mode, event_type, interval = 1, 1, 1.0 # 1초 주기

@@ -12,6 +12,7 @@ services:
     environment:
       # 9094(외부용) 대신 내부 통로인 9091 사용
       KAFKA_BROKER: "{{ broker_internal_ip }}:9091"
+ 
   # Kafka Connect
   kafka-connect:
     image: {{ dockerhub_username }}/custom-kafka-connect:latest # confluentinc/cp-kafka-connect:7.5.0
@@ -41,21 +42,13 @@ services:
       CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
       
       CONNECT_PLUGIN_PATH: "/usr/share/confluent-hub-components"
-      
-      # AWS S3에 접근하기 위한 값
-      # AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-      # AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-      # AWS_REGION: "{{ aws_region }}"
 
-      # Azure Blob Storage에 접근하기 위한 값
-      # AZURE_STORAGE_ACCOUNT_NAME: "{{ azure_storage_account_name }}"
-      # AZURE_STORAGE_ACCOUNT_KEY: "{{ azure_storage_primary_key }}"
-
+    # S3 미사용으로 임시 주석 처리 (삭제 예정)
     # S3 커넥터는 Confluent 허브에서 정석대로 설치
-    command: 
-      - bash
-      - -c
-      - |
-        confluent-hub install --no-prompt confluentinc/kafka-connect-s3:latest
-        /etc/confluent/docker/run
+    #command: 
+    #  - bash
+    #  - -c
+    #  - |
+    #    confluent-hub install --no-prompt confluentinc/kafka-connect-s3:latest
+    #    /etc/confluent/docker/run
     restart: always
