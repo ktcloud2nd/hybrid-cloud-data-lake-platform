@@ -1,4 +1,10 @@
 ---
+- name: operator-worker 노드 Ready 대기 (최대 10분)
+  command: kubectl wait node --selector=role=operator-worker --for=condition=Ready --timeout=600s
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
 - name: prometheus Helm repo 추가
   command: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update
   environment:
