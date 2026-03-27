@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "실행할 작업을 선택하세요."
+        description: "Select the job to run."
         required: true
         type: choice
         options:
@@ -24,6 +24,7 @@ env:
   TF_VERSION: "1.8.5"
   TF_VAR_network_state_access_key: ${{ secrets.AWS_TFSTATE_S3_ACCESS_KEY }}
   TF_VAR_network_state_secret_key: ${{ secrets.AWS_TFSTATE_S3_SECRET_ACCESS_KEY }}
+  ARGOCD_REPO_URL: https://github.com/yjhoo98/ktcloud2nd.git
 
 jobs:
   terraform-plan:
@@ -176,11 +177,11 @@ jobs:
         run: |
           NAME_PREFIX=$(grep '^name_prefix' terraform.tfvars | sed 's/.*= *"\(.*\)"/\1/')
           BUCKET_NAME="${NAME_PREFIX}-data"
-          echo "대상 버킷: $BUCKET_NAME"
+          echo "Checking bucket: $BUCKET_NAME"
           if terraform state show aws_s3_bucket.data > /dev/null 2>&1; then
-            echo "이미 state에 존재 - import 생략"
+            echo "Bucket already exists in state, skipping import."
           elif aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-            echo "AWS에 버킷 존재 - import 실행"
+            echo "Bucket exists in AWS, importing into Terraform state."
             terraform import aws_s3_bucket.data "$BUCKET_NAME"
           else
             echo "Bucket does not exist yet, Terraform will create it."
@@ -189,45 +190,6 @@ jobs:
       - name: Data Apply
         working-directory: ${{ github.workspace }}/infra/aws/terraform/data
         run: terraform apply -input=false -auto-approve
-
-      - name: Ansible 인벤토리 hosts.ini 생성
-        run: |
-          MASTER_A_ID=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_a_instance_id)
-          MASTER_C_ID=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_c_instance_id)
-          MASTER_A_IP=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_a_private_ip)
-          MASTER_C_IP=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_c_private_ip)
-          NLB_DNS=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw k3s_nlb_dns)
-          DB_ENDPOINT=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_endpoint)
-          DB_PORT=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_port)
-          DB_NAME=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_name)
-          DB_USERNAME=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_username)
-          CLUSTER_NAME=$(grep '^cluster_name' ${{ github.workspace }}/infra/aws/terraform/compute/terraform.tfvars | sed 's/.*= *"\(.*\)"/\1/')
-          mkdir -p ${{ github.workspace }}/infra/aws/ansible/inventory
-          INV=${{ github.workspace }}/infra/aws/ansible/inventory/hosts.ini
-          printf '[all:vars]\n' > "$INV"
-          printf 'ansible_user=ubuntu\n' >> "$INV"
-          printf 'ansible_ssh_private_key_file=~/.ssh/infra.pem\n' >> "$INV"
-          printf 'ansible_ssh_common_args='"'"'-o StrictHostKeyChecking=no -o ProxyCommand="aws ssm start-session --target %%h --document-name AWS-StartSSHSession --parameters portNumber=%%p"'"'"'\n' >> "$INV"
-          printf 'cluster_name=%s\n' "$CLUSTER_NAME" >> "$INV"
-          printf 'aws_region=%s\n' "$AWS_REGION" >> "$INV"
-          printf 'nlb_dns=%s\n' "$NLB_DNS" >> "$INV"
-          printf 'db_endpoint=%s\n' "$DB_ENDPOINT" >> "$INV"
-          printf 'db_port=%s\n' "$DB_PORT" >> "$INV"
-          printf 'db_name=%s\n' "$DB_NAME" >> "$INV"
-          printf 'db_username=%s\n' "$DB_USERNAME" >> "$INV"
-          printf 'argocd_repo_url=https://github.com/yjhoo98/ktcloud2nd.git\n' >> "$INV"
-          printf '\n[masters]\n' >> "$INV"
-          printf 'master_a ansible_host=%s private_ip=%s\n' "$MASTER_A_ID" "$MASTER_A_IP" >> "$INV"
-          printf 'master_c ansible_host=%s private_ip=%s\n' "$MASTER_C_ID" "$MASTER_C_IP" >> "$INV"
-          printf '\n[k8s_cluster:children]\nmasters\n' >> "$INV"
-          echo "hosts.ini 생성 완료:" && cat "$INV"
-
-      - name: Ansible 인벤토리 아티팩트 업로드
-        uses: actions/upload-artifact@v4
-        with:
-          name: ansible-inventory
-          path: infra/aws/ansible/inventory/hosts.ini
-          if-no-files-found: error
 
   terraform-destroy:
     name: Terraform Destroy
@@ -349,6 +311,7 @@ jobs:
           -backend-config="secret_key=${{ secrets.AWS_TFSTATE_S3_SECRET_ACCESS_KEY }}"
 
       - name: Generate Ansible inventory hosts.ini
+        shell: bash
         run: |
           MASTER_A_ID=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_a_instance_id)
           MASTER_C_ID=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/compute output -raw master_c_instance_id)
@@ -360,8 +323,10 @@ jobs:
           DB_NAME=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_name)
           DB_USERNAME=$(terraform -chdir=${{ github.workspace }}/infra/aws/terraform/data output -raw db_username)
           CLUSTER_NAME=$(grep '^cluster_name' ${{ github.workspace }}/infra/aws/terraform/compute/terraform.tfvars | sed 's/.*= *"\(.*\)"/\1/')
+
           mkdir -p ${{ github.workspace }}/infra/aws/ansible/inventory
           INV=${{ github.workspace }}/infra/aws/ansible/inventory/hosts.ini
+
           printf '[all:vars]\n' > "$INV"
           printf 'ansible_user=ubuntu\n' >> "$INV"
           printf 'ansible_ssh_private_key_file=~/.ssh/infra.pem\n' >> "$INV"
@@ -373,10 +338,12 @@ jobs:
           printf 'db_port=%s\n' "$DB_PORT" >> "$INV"
           printf 'db_name=%s\n' "$DB_NAME" >> "$INV"
           printf 'db_username=%s\n' "$DB_USERNAME" >> "$INV"
+          printf 'argocd_repo_url=%s\n' "$ARGOCD_REPO_URL" >> "$INV"
           printf '\n[masters]\n' >> "$INV"
           printf 'master_a ansible_host=%s private_ip=%s\n' "$MASTER_A_ID" "$MASTER_A_IP" >> "$INV"
           printf 'master_c ansible_host=%s private_ip=%s\n' "$MASTER_C_ID" "$MASTER_C_IP" >> "$INV"
           printf '\n[k8s_cluster:children]\nmasters\n' >> "$INV"
+
           echo "Generated hosts.ini:"
           cat "$INV"
 
@@ -388,7 +355,7 @@ jobs:
           if-no-files-found: error
 
   ansible-k3s-setup:
-    name: Ansible-playbook
+    name: Ansible Playbook
     runs-on: ubuntu-latest
     needs: prepare-ansible-inventory
     if: ${{ contains(fromJSON('["apply","ansible"]'), inputs.action) }}
@@ -423,10 +390,13 @@ jobs:
         run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > infra/aws/ansible/vault/vault_pass && chmod 600 infra/aws/ansible/vault/vault_pass
 
       - name: Wait for EC2 instances to be reachable through SSM
+        shell: bash
         run: |
           MASTER_A=$(grep 'master_a' infra/aws/ansible/inventory/hosts.ini | grep -oP 'ansible_host=\K[^\s]+')
           MASTER_C=$(grep 'master_c' infra/aws/ansible/inventory/hosts.ini | grep -oP 'ansible_host=\K[^\s]+')
+
           echo "Checking SSM status for: $MASTER_A $MASTER_C"
+
           for i in $(seq 1 18); do
             COUNT=$(aws ssm describe-instance-information --filters "Key=InstanceIds,Values=${MASTER_A},${MASTER_C}" --query 'InstanceInformationList[?PingStatus==`Online`]' --output json | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
             echo "SSM online instances: $COUNT / 2"
@@ -435,10 +405,10 @@ jobs:
             fi
             sleep 10
           done
+
           echo "SSM instances did not become ready in time."
           exit 1
 
-      - name: Ansible Playbook 실행 (K3s + Linkerd + Prometheus + ArgoCD)
+      - name: Run Ansible playbook
         working-directory: infra/aws/ansible
         run: ansible-playbook -i inventory/hosts.ini --vault-password-file vault/vault_pass playbooks/setup_k3s_cluster.yml
-
