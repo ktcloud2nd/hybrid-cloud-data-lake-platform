@@ -3,7 +3,7 @@ terraform {
 
   backend "s3" {
     bucket  = "palja-terraform-backend"
-    key     = "data/terraform.tfstate"
+    key     = "aws/data/terraform.tfstate"
     region  = "ap-northeast-2"
     encrypt = true
   }

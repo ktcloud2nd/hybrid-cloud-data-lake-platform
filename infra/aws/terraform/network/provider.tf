@@ -3,7 +3,7 @@ terraform {
 
   backend "s3" {
     bucket  = "palja-terraform-backend"
-    key     = "network/terraform.tfstate"
+    key     = "aws/network/terraform.tfstate"
     region  = "ap-northeast-2"
     encrypt = true
   }
@@ -12,22 +12,6 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
-    }
-  }
-}
-
-data "terraform_remote_state" "azure" {
-  backend = "s3"
-  config = {
-    bucket = "palja-terraform-backend"
-    key    = "azure/terraform.tfstate" # azure 파일 경로
-    region = "ap-northeast-2"
-  }
-
-  # 에러 방지: Azure 배포 전이라 S3에 파일이 없을 때 사용할 기본값
-  defaults = {
-    outputs = {
-      consumer_nat_public_ip = "0.0.0.0" 
     }
   }
 }

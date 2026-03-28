@@ -21,7 +21,7 @@ resource "azurerm_subnet" "consumer_subnet" {
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
 
-  # Azure 스토리지와 통신할 때 내부망(Azure Backbone)만 타도록 설정
+  # ★ Azure 스토리지와 통신할 때 내부망(Azure Backbone)만 타도록 설정
   service_endpoints    = ["Microsoft.Storage"]
 }
 

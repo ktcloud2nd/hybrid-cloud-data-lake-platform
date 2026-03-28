@@ -18,6 +18,9 @@ env:
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
 
   # variables.tf로 밀어 넣을 비밀 정보
   TF_VAR_public_key: ${{ secrets.AZURE_PUBLIC_KEY }}
@@ -182,14 +185,3 @@ jobs:
           -e "rds_endpoint=db.vehicle.internal" \
           -e "db_name=vehicle_db" \
           -e "db_user=dbadmin"
-    
-    # Azure NAT IP를 AWS 보안 그룹에 반영하기 위해 AWS 배포를 자동 호출
-    # 기본 토큰은 권한이 부족하므로 별도 생성한 PAT(MY_GITHUB_TOKEN) 사용
-    - name: Trigger AWS SG Update
-      if: success() && github.event.inputs.action == 'apply'
-      run: |
-        curl -X POST \
-          -H "Authorization: token ${{ secrets.MY_GITHUB_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ github.repository }}/actions/workflows/aws-deploy.yml/dispatches \
-          -d '{"ref":"main", "inputs": {"action": "apply"}}'

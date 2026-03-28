@@ -245,16 +245,14 @@ resource "aws_security_group" "db" {
   description = "Security group for PostgreSQL database resources."
   vpc_id      = aws_vpc.this.id
 
-  # K3s 노드, Azure Consumer VM 허용
+  # K3s 노드, Azure Consumer VM 허용 예정
   ingress {
     description     = "Allow PostgreSQL from K3s nodes"
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.k3s_nodes.id]
-    cidr_blocks = [
-      "${data.terraform_remote_state.azure.outputs.consumer_nat_public_ip}/32"
-    ]
+    # cidr_blocks은 Azure에서 추가 (Azure NAT IP 넣어야 함)
   }
 
   egress {
