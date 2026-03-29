@@ -468,6 +468,44 @@ jobs:
               ubuntu@"${TARGET}" 'echo ssm-ssh-ok'
           done
 
-      - name: Run Ansible playbook
+      # 배포 시점에만 GitHub Runner IP 동적 허용
+      - name: Get GitHub Runner IP
+        id: runner-ip
+        run: echo "ip=$(curl -s https://checkip.amazonaws.com)" >> $GITHUB_OUTPUT
+
+      - name: Get DB Security Group ID
+        id: get-sg
+        # network 테라폼 아웃풋에서 SG ID를 가져옴
+        run: |
+          SG_ID=$(terraform -chdir=infra/aws/terraform/network output -raw db_sg_id)
+          echo "sg_id=$SG_ID" >> $GITHUB_OUTPUT
+
+      - name: Open RDS Security Group
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ steps.get-sg.outputs.sg_id }} \
+            --protocol tcp --port 5432 \
+            --cidr ${{ steps.runner-ip.outputs.ip }}/32
+      
+      # DB 테이블 생성 위함
+      - name: Install Postgres Driver for Ansible
+        run: pip install psycopg2-binary
+      
+      - name: Run Full Ansible Playbook (K3s + DB)
         working-directory: infra/aws/ansible
-        run: ansible-playbook -i inventory/hosts.ini --vault-password-file vault/vault_pass playbooks/setup_k3s_cluster.yml
+        env:
+          DB_PASS: ${{ secrets.RDS_PASSWORD }}
+        run: |
+          ansible-playbook -i inventory/hosts.ini \
+            --vault-password-file vault/vault_pass \
+            -e "db_password=$DB_PASS" \
+            playbooks/setup_k3s_cluster.yml
+
+      # 성공/실패 여부와 상관없이 무조건 실행해서 DB 보안그룹 막기
+      - name: Close RDS Security Group
+        if: always() 
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ steps.get-sg.outputs.sg_id }} \
+            --protocol tcp --port 5432 \
+            --cidr ${{ steps.runner-ip.outputs.ip }}/32

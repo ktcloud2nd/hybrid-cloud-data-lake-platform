@@ -33,3 +33,10 @@
   become: yes
   roles:
     - argocd
+
+- name: 데이터베이스 스키마 및 초기화
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - db_setup

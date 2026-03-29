@@ -1,0 +1,8 @@
+---
+- name: SQL 파일을 사용하여 모든 테이블 및 인덱스 생성
+  community.postgresql.postgresql_query:
+    login_host: "{{ db_endpoint }}"
+    login_user: "{{ db_username }}"
+    login_password: "{{ db_password }}"
+    db: "{{ db_name }}"
+    query: "{{ lookup('file', 'init_db.sql') }}" # roles/db_setup/files/ 아래에 있는 sql 파일 읽기

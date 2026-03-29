@@ -1,0 +1,5 @@
+---
+db_endpoint: "db.yourdomain.com"
+db_user: "dbadmin"
+db_name: "vehicle_db"
+# db_password는 GitHub Actions에서 넘겨줌
