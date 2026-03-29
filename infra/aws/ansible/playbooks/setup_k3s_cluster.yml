@@ -8,6 +8,26 @@
   roles:
     - k3s_master
 
+- name: 데이터베이스 스키마 및 초기화
+  hosts: masters[0] # GitHub Runner가 아닌 마스터 노드 1번 EC2에서 실행
+  become: yes
+  gather_facts: yes
+  tasks:
+    # Runner가 아닌 EC2 내부에 직접 드라이버 설치
+    - name: EC2 내부에 Postgres 드라이버 설치
+      apt:
+        name: python3-psycopg2
+        state: present
+        update_cache: yes
+
+    # 기존 db_setup 역할을 EC2 위에서 실행
+    - name: DB 초기화 역할 실행
+      include_role:
+        name: db_setup
+      vars:
+        # EC2 안의 파이썬을 사용해서 실행
+        ansible_python_interpreter: /usr/bin/python3
+
 - name: Linkerd 서비스 메시 설치
   hosts: masters
   become: yes
@@ -33,24 +53,3 @@
   become: yes
   roles:
     - argocd
-
-- name: 데이터베이스 스키마 및 초기화
-  hosts: masters[0] # GitHub Runner가 아닌 마스터 노드 1번 EC2에서 실행
-  become: yes
-  gather_facts: yes
-  vars_files:
-  tasks:
-    # Runner가 아닌 EC2 내부에 직접 드라이버 설치
-    - name: EC2 내부에 Postgres 드라이버 설치
-      apt:
-        name: python3-psycopg2
-        state: present
-        update_cache: yes
-
-    # 기존 db_setup 역할을 EC2 위에서 실행
-    - name: DB 초기화 역할 실행
-      include_role:
-        name: db_setup
-      vars:
-        # EC2 안의 파이썬을 사용해서 실행
-        ansible_python_interpreter: /usr/bin/python3
