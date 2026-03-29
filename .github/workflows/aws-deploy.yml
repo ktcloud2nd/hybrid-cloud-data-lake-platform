@@ -468,6 +468,24 @@ jobs:
               ubuntu@"${TARGET}" 'echo ssm-ssh-ok'
           done
 
+      # Terraform 설치 (이게 있어야 output을 읽어올 수 있음)
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      # Terraform Init (Backend 연결을 위해 필요)
+      - name: Network Init
+        working-directory: infra/aws/terraform/network
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=network/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
       # 배포 시점에만 GitHub Runner IP 동적 허용
       - name: Get GitHub Runner IP
         id: runner-ip
