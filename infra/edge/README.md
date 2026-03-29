@@ -52,7 +52,7 @@
      GitHub Actions Terraform Apply 결과 창의 broker_public_ip를 확인하세요.
      ```bash
      # 발급받은 실제 IP로 수정하여 실행
-     echo "BROKER_PUBLIC_IP=xx.xx.xx.xx" > .env
+     echo "BROKER_PUBLIC_IP=xx.xx.xx.xx:9094" > .env
 
    - **컨테이너 가동**
      ```bash
