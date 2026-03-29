@@ -60,11 +60,24 @@
   retries: 10
   delay: 30
 
+# Viz 네임스페이스 생성 (shell로 통일하여 웹훅 간섭 최소화)
+- name: Linkerd Viz 네임스페이스 생성
+  shell: |
+    kubectl create namespace linkerd-viz --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+# Viz 설치 (재시도 로직 및 에러 방어 추가)
 - name: Linkerd Viz extension 설치
   shell: linkerd viz install | kubectl apply -f -
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
+  register: viz_install
+  until: viz_install.rc == 0
+  retries: 5 # 웹훅 에러 발생 시 최대 5번 재시도
+  delay: 10  # 10초 간격으로 시도
 
 - name: Linkerd Viz 준비 완료 대기 (최대 5분)
   command: linkerd viz check
