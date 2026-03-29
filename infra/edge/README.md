@@ -1,13 +1,16 @@
-# On-premise Vehicle Simulator 실행 가이드
+## Vehicle Edge Simulator 실행 가이드
 
-이 가이드는 Azure 카프카 브로커로 데이터를 전송하는 시뮬레이터를 온프레미스(VirtualBox)에 설치하고 실행하는 절차를 담고 있습니다.
+이 가이드는 차량 단말(Edge Device) 역할을 수행하는 시뮬레이터를 로컬 환경(VirtualBox)에 설치하고, Azure 클라우드의 Kafka 브로커로 데이터를 스트리밍하는 절차를 담고 있습니다.
 
-### 1. 전제 조건
-- **VirtualBox VM**: Ubuntu 등 리눅스 환경 권장
+### 1. 설계 의도
+본 시뮬레이터는 Edge-to-Cloud 하이브리드 아키텍처의 최전방 노드입니다. 클라우드 외부(Edge)에서 발생한 데이터를 실시간으로 수집하여 클라우드로 전송하는 실무 환경을 재현합니다.
+
+### 2. 전제 조건
+- **Edge Node**: VirtualBox VM (Ubuntu 등 리눅스 환경 권장)
 - **네트워크**: 가상머신이 외부 인터넷(Docker Hub 접속용)에 연결된 상태
-- **Azure Infra**: GitHub Actions를 통한 Terraform 배포 및 이미지 푸시 완료
+- **Azure Infra**: GitHub Actions를 통한 Terraform 배포 및 이미지 Push 완료
 
-### 2. 실행 순서
+### 3. 실행 순서
 1. **Docker 설치 (최초 1회)**<br>
    터미널에 접속하여 아래 명령어를 한 줄씩 실행하세요.
    ```bash
