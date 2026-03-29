@@ -91,11 +91,12 @@ def send_to_kafka(vehicle, event_type, mode):
     }
 
     try:
-        # 키(Key)는 차량 ID 문자열 그대로 전송
-        key_bytes = vehicle["vehicle_id"].encode('utf-8')
-        
-        # 중요: value에 'schema_wrapped' 전체를 전송
-        producer.send("raw_topic", key=key_bytes, value=schema_wrapped)
+        # 키 JSON으로 직렬화해서 전송
+        key_payload = {"vehicle_id": vehicle["vehicle_id"]}
+        key_json = json.dumps(key_payload).encode('utf-8')
+
+        # 전송
+        producer.send("raw_topic", key=key_json, value=schema_wrapped)
     except Exception as e:
         print(f"전송 에러 ({vehicle['vehicle_id']}): {e}")
 

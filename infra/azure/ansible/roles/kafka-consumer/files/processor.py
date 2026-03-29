@@ -71,8 +71,11 @@ def send_alert(vehicle_id, anomaly_type, description, evidence_value, timestamp)
     }
 
     # 차량 ID를 키로 지정하여 순서 보장 전송
-    key_bytes = str(vehicle_id).encode('utf-8')
-    producer.send(ANOMALY_TOPIC, key=key_bytes, value=alert_wrapped)
+    # JSON 키 형식
+    key_payload = {"vehicle_id": str(vehicle_id)}
+    key_json = json.dumps(key_payload).encode('utf-8')
+
+    producer.send(ANOMALY_TOPIC, key=key_json, value=alert_wrapped)
     print(f"[알람 발송] {vehicle_id}: {anomaly_type} ({evidence_value})")
 
 # 백그라운드 스레드: 30초 미수신 감시 (로직 유지)

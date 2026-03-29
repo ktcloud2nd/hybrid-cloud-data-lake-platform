@@ -53,9 +53,10 @@
         connector.class: "io.aiven.kafka.connect.azure.sink.AzureBlobSinkConnector"
         tasks.max: "1"
         topics: "raw_topic"
-        key.converter: "org.apache.kafka.connect.storage.StringConverter"
+        key.converter: "org.apache.kafka.connect.json.JsonConverter"
+        key.converter.schemas.enable: "false" 
         value.converter: "org.apache.kafka.connect.json.JsonConverter"
-        value.converter.schemas.enable: "false"
+        value.converter.schemas.enable: "true"
         azure.storage.connection.string: "DefaultEndpointsProtocol=https;AccountName={{ azure_storage_account_name }};AccountKey={{ azure_storage_primary_key }};EndpointSuffix=core.windows.net"
         azure.storage.container.name: "raw-topic-container"
         format.output.fields: "value"
@@ -91,6 +92,8 @@
         auto.create: "false"
         value.converter: "org.apache.kafka.connect.json.JsonConverter"
         value.converter.schemas.enable: "true"
+        key.converter: "org.apache.kafka.connect.json.JsonConverter" # 추가
+        key.converter.schemas.enable: "false"
         batch.size: "1" # 3개의 파티션이니까 약 150개의 데이터가 보내져야 확인 가능 (오버헤드 예방, 실시간성 1~2초 지연)
         #linger.ms: "2000" # 2초마다 강제 INSERT (사용자는 거의 실시간으로 느낌)
     status_code: [201, 409]
@@ -118,6 +121,8 @@
         auto.create: "false"
         value.converter: "org.apache.kafka.connect.json.JsonConverter"
         value.converter.schemas.enable: "true"
+        key.converter: "org.apache.kafka.connect.json.JsonConverter" # 추가
+        key.converter.schemas.enable: "false"
         batch.size: "1" # 이상 탐지는 즉시 확인해야하므로 1개씩 데이터 전송
     status_code: [201, 409]
   register: rds_anomaly_result
