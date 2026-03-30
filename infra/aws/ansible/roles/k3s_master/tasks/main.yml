@@ -63,6 +63,16 @@
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
+- name: Traefik DaemonSet 생성 대기 (HelmChartConfig 반영 시간 확보)
+  command: kubectl get daemonset traefik -n kube-system
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+  register: traefik_ds_check
+  retries: 12
+  delay: 15
+  until: traefik_ds_check.rc == 0
+
 - name: Traefik DaemonSet 롤아웃 대기
   command: kubectl rollout status daemonset/traefik -n kube-system --timeout=120s
   environment:
