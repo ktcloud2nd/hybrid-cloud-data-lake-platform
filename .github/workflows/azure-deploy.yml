@@ -172,6 +172,11 @@ jobs:
     # Ansible 실행
     - name: Run Ansible Playbook
       if: ${{ github.event.inputs.action == 'apply' }}
+      env:
+        # AWS 자격 증명을 실행 시점에 명시적으로 다시 주입
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
       run: |
         BROKER_IP=$(terraform output -json broker_public_ip | jq -r .)
         BROKER_PRIV_IP=$(terraform output -json broker_private_ip | jq -r .)
