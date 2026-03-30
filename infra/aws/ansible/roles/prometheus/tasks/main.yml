@@ -1,23 +1,61 @@
 ---
-- name: operator-worker 노드 Ready 대기 (최대 10분)
+- name: Wait for operator worker nodes to become ready
   command: kubectl wait node --selector=role=operator-worker --for=condition=Ready --timeout=600s
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
-- name: prometheus Helm repo 추가
+- name: Add prometheus-community Helm repository
   command: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
-- name: Helm repo 업데이트
+- name: Update Helm repositories
   command: helm repo update
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
-- name: kube-prometheus-stack 릴리즈 상태 확인
+- name: Ensure operator-app namespace exists
+  shell: kubectl create namespace operator-app --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Prepare kube-prometheus-stack asset directory
+  file:
+    path: /tmp/kube-prometheus-stack/dashboards
+    state: directory
+    mode: "0755"
+  run_once: true
+
+- name: Upload kube-prometheus-stack values
+  copy:
+    src: kube-prometheus-stack-values.yaml
+    dest: /tmp/kube-prometheus-stack/kube-prometheus-stack-values.yaml
+    mode: "0644"
+  run_once: true
+
+- name: Upload provisioned Grafana dashboard
+  copy:
+    src: grafana-dashboards/k3s-infra-overview.json
+    dest: /tmp/kube-prometheus-stack/dashboards/k3s-infra-overview.json
+    mode: "0644"
+  run_once: true
+
+- name: Apply Grafana dashboard ConfigMap
+  shell: >
+    kubectl create configmap grafana-provisioned-dashboards
+    --namespace operator-app
+    --from-file=/tmp/kube-prometheus-stack/dashboards
+    --dry-run=client -o yaml
+    | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Check kube-prometheus-stack release status
   shell: >
     helm status kube-prometheus-stack --namespace operator-app --output json 2>/dev/null
     | python3 -c "import sys,json; print(json.load(sys.stdin)['info']['status'])"
@@ -29,7 +67,7 @@
   failed_when: false
   changed_when: false
 
-- name: Prometheus StatefulSet 존재 여부 확인
+- name: Check Prometheus StatefulSet status
   shell: kubectl get statefulset prometheus-kube-prometheus-stack-prometheus --namespace operator-app 2>/dev/null && echo "exists" || echo "not-found"
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
@@ -38,19 +76,20 @@
   failed_when: false
   changed_when: false
 
-- name: 실패하거나 불완전한 릴리즈 제거 (재설치 위해)
+- name: Uninstall broken kube-prometheus-stack release when needed
   command: helm uninstall kube-prometheus-stack --namespace operator-app
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
   when: prometheus_release_status.stdout in ["failed", "pending-install", "pending-upgrade"] or (prometheus_release_status.stdout == "deployed" and prometheus_statefulset_status.stdout == "not-found")
 
-- name: kube-prometheus-stack Helm 배포
+- name: Deploy kube-prometheus-stack with Grafana provisioning
   command: >
     helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack
     --namespace operator-app
     --create-namespace
     --timeout 15m
+    --values /tmp/kube-prometheus-stack/kube-prometheus-stack-values.yaml
     --set prometheusOperator.admissionWebhooks.enabled=false
     --set prometheusOperator.admissionWebhooks.patch.enabled=false
     --set prometheusOperator.tls.enabled=false
@@ -79,20 +118,20 @@
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
-- name: Grafana 파드 준비 완료 대기
+- name: Wait for Grafana rollout
   command: kubectl rollout status deployment/kube-prometheus-stack-grafana --namespace operator-app --timeout=300s
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
-- name: Prometheus StatefulSet 생성 대기
+- name: Wait for Prometheus StatefulSet to report replicas
   command: kubectl wait statefulset/prometheus-kube-prometheus-stack-prometheus --namespace operator-app --for=jsonpath='{.status.replicas}' --timeout=120s
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
   failed_when: false
 
-- name: Prometheus 파드 준비 완료 대기
+- name: Wait for Prometheus rollout
   command: kubectl rollout status statefulset/prometheus-kube-prometheus-stack-prometheus --namespace operator-app --timeout=300s
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
