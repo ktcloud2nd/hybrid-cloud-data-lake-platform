@@ -66,6 +66,11 @@
     --set dex.tolerations[0].value=operator
     --set dex.tolerations[0].effect=NoSchedule
     --set dex.nodeSelector.role=operator-worker
+    --set notifications.tolerations[0].key=nodetype
+    --set notifications.tolerations[0].operator=Equal
+    --set notifications.tolerations[0].value=operator
+    --set notifications.tolerations[0].effect=NoSchedule
+    --set notifications.nodeSelector.role=operator-worker
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
