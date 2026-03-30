@@ -5,6 +5,9 @@
   become: yes
   vars_files:
     - ../vault/vault.yml
+    - ../roles/db_setup/vars/main.yml
+  vars:
+    db_password: "{{ lookup('aws_ssm', '/config/vehicle/db_password', decrypt=True, region='ap-northeast-2') }}"
   roles:
     - k3s_master
 
@@ -12,6 +15,8 @@
   hosts: masters[0] # GitHub Runner가 아닌 마스터 노드 1번 EC2에서 실행
   become: yes
   gather_facts: yes
+  vars:
+    db_password: "{{ lookup('aws_ssm', '/config/vehicle/db_password', decrypt=True, region='ap-northeast-2') }}"
   tasks:
     # Runner가 아닌 EC2 내부에 직접 드라이버 설치
     - name: EC2 내부에 Postgres 드라이버 설치
@@ -27,6 +32,7 @@
       vars:
         # EC2 안의 파이썬을 사용해서 실행
         ansible_python_interpreter: /usr/bin/python3
+        db_password: "{{ db_password }}"
 
 - name: Linkerd 서비스 메시 설치
   hosts: masters

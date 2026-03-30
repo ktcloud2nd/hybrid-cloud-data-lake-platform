@@ -2,7 +2,7 @@
 - name: Install K3s master with external PostgreSQL datastore
   shell: |
     curl -sfL https://get.k3s.io | \
-      K3S_DATASTORE_ENDPOINT="postgres://{{ db_username }}:{{ vault_db_password }}@{{ db_endpoint }}:{{ db_port }}/{{ db_name }}" \
+      K3S_DATASTORE_ENDPOINT="postgres://{{ db_username }}:{{ db_password }}@{{ db_endpoint }}:{{ db_port }}/{{ db_name }}" \
       K3S_TOKEN="{{ vault_k3s_shared_token }}" \
       sh -s - server \
       --tls-san {{ nlb_dns }}
