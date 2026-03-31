@@ -116,3 +116,17 @@
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
+
+- name: login 네임스페이스 생성 및 Linkerd 주입 활성화
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: login
+      annotations:
+        linkerd.io/inject: enabled
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
