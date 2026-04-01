@@ -1,4 +1,4 @@
-# VNet 생성
+﻿# VNet 생성
 resource "azurerm_virtual_network" "vnet" {
   name                = "palja-vnet"
   address_space       = ["10.0.0.0/16"]
@@ -16,13 +16,13 @@ resource "azurerm_subnet" "broker_subnet" {
 
 # Kafka Consumer Subnet 생성
 resource "azurerm_subnet" "consumer_subnet" {
-	name                 = "consumer-subnet"
+  name                 = "consumer-subnet"
   address_prefixes     = ["10.0.2.0/24"]
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
 
-  # ★ Azure 스토리지와 통신할 때 내부망(Azure Backbone)만 타도록 설정
-  service_endpoints    = ["Microsoft.Storage"]
+  # Azure Storage는 Azure 백본망 경유로만 접근하도록 service endpoint 사용
+  service_endpoints = ["Microsoft.Storage"]
 }
 
 # Bastion Subnet 생성
@@ -33,7 +33,7 @@ resource "azurerm_subnet" "bastion_subnet" {
   virtual_network_name = azurerm_virtual_network.vnet.name
 }
 
-# NAT Gateway용 Public IP 생성 (NAT Gateway에 붙음)
+# Consumer 전용 NAT Gateway와 공인 IP
 resource "azurerm_public_ip" "consumer_nat_ip" {
   name                = "consumer-nat-ip"
   location            = azurerm_resource_group.rg.location
@@ -42,7 +42,6 @@ resource "azurerm_public_ip" "consumer_nat_ip" {
   sku                 = "Standard"
 }
 
-# NAT Gateway 생성
 resource "azurerm_nat_gateway" "consumer_nat_gw" {
   name                = "consumer-nat-gw"
   location            = azurerm_resource_group.rg.location
@@ -50,21 +49,19 @@ resource "azurerm_nat_gateway" "consumer_nat_gw" {
   sku_name            = "Standard"
 }
 
-# NAT Gateway에 Public IP 연결
 resource "azurerm_nat_gateway_public_ip_association" "nat_ip_assoc" {
   nat_gateway_id       = azurerm_nat_gateway.consumer_nat_gw.id
   public_ip_address_id = azurerm_public_ip.consumer_nat_ip.id
 }
 
-# Consuemr Subnet에 NAT Gateway 연결
 resource "azurerm_subnet_nat_gateway_association" "consumer_subnet_nat" {
   subnet_id      = azurerm_subnet.consumer_subnet.id
   nat_gateway_id = azurerm_nat_gateway.consumer_nat_gw.id
 }
 
-# Broker NSG 생성
-resource "azurerm_network_security_group" "broker_nsg" {
-  name                = "broker-nsg"
+# Broker는 온프렘 Kafka 트래픽과 VNet 내부 SSH만 허용
+resource "azurerm_network_security_group" "broker_private_nsg" {
+  name                = "broker-private-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -74,70 +71,59 @@ resource "azurerm_network_security_group" "broker_nsg" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefix      = "${var.onprem_ip}/32" # 온프레미스 공인 IP (32비트 전체 고정)
+    source_address_prefix      = "${var.onprem_ip}/32"
     destination_port_ranges    = ["9094", "9095", "9096"]
     source_port_range          = "*"
     destination_address_prefix = "*"
   }
 
   security_rule {
-    name                       = "allow-ssh"
+    name                       = "allow-ssh-from-vnet"
     priority                   = 110
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefix      = "*" # 임시 개방 (관리자 IP + GitHub Runner IP)
+    source_address_prefix      = "10.0.0.0/16"
     destination_port_range     = "22"
     source_port_range          = "*"
     destination_address_prefix = "*"
   }
 }
 
-# Consumer NSG 생성
-resource "azurerm_network_security_group" "consumer_nsg" {
-  name                = "consumer-nsg"
+# Consumer는 VNet 내부 SSH만 허용
+resource "azurerm_network_security_group" "consumer_private_nsg" {
+  name                = "consumer-private-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
   security_rule {
-  name                       = "allow-ssh-from-vnet"
-  priority                   = 100 # 우선순위 높임
-  direction                  = "Inbound"
-  access                     = "Allow"
-  protocol                   = "Tcp"
-  source_address_prefix      = "10.0.0.0/16" # VNet 내부 통신 허용
-  destination_port_range     = "22"
-  source_port_range          = "*"
-  destination_address_prefix = "*"
-}
-  
-  security_rule {
-    name                       = "allow-ssh"
-    priority                   = 110
+    name                       = "allow-ssh-from-vnet"
+    priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefix      = "*" # 10.0.1.0/24여야 하나, GitHub Actions 접속을 위해 임시로 전체 개방 (보안을 위해 Bastion(Broker) 방식 사용해도 되나 복잡해짐)
+    source_address_prefix      = "10.0.0.0/16"
     destination_port_range     = "22"
     source_port_range          = "*"
     destination_address_prefix = "*"
   }
 
-	# Kafka Connect API용
-  security_rule {
-    name                       = "allow-kafka-connect-api"
-    priority                   = 120
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_address_prefix      = "*" 
-    destination_port_range     = "8083"
-    source_port_range          = "*"
-    destination_address_prefix = "*"
-  }
+  # Kafka Connect REST API는 외부 공개하지 않는다.
+  # 필요 시 내부 관리 용도로만 아래 블록을 다시 활성화한다.
+  # security_rule {
+  #   name                       = "allow-kafka-connect-api"
+  #   priority                   = 120
+  #   direction                  = "Inbound"
+  #   access                     = "Allow"
+  #   protocol                   = "Tcp"
+  #   source_address_prefix      = "10.0.0.0/16"
+  #   destination_port_range     = "8083"
+  #   source_port_range          = "*"
+  #   destination_address_prefix = "*"
+  # }
 }
 
-# Bastion NSG 생성
+# Bastion은 외부 SSH 진입점 역할
 resource "azurerm_network_security_group" "bastion_nsg" {
   name                = "bastion-nsg"
   location            = azurerm_resource_group.rg.location
@@ -149,22 +135,22 @@ resource "azurerm_network_security_group" "bastion_nsg" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_address_prefix      = "*" # GitHub Actions IP용
+    source_address_prefix      = "*"
     destination_port_range     = "22"
     source_port_range          = "*"
     destination_address_prefix = "*"
   }
 }
 
-# NSG 연결
+# Subnet에 실제 사용할 NSG 연결
 resource "azurerm_subnet_network_security_group_association" "broker_assoc" {
   subnet_id                 = azurerm_subnet.broker_subnet.id
-  network_security_group_id = azurerm_network_security_group.broker_nsg.id
+  network_security_group_id = azurerm_network_security_group.broker_private_nsg.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "consumer_assoc" {
   subnet_id                 = azurerm_subnet.consumer_subnet.id
-  network_security_group_id = azurerm_network_security_group.consumer_nsg.id
+  network_security_group_id = azurerm_network_security_group.consumer_private_nsg.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "bastion_assoc" {

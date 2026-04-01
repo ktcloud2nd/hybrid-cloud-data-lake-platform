@@ -1,0 +1,115 @@
+name: 'Azure Configure via Bastion Runner'
+
+on:
+  workflow_dispatch:
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  configure-azure-vms:
+    name: 'Configure Azure VMs from Bastion'
+    runs-on: [self-hosted, linux, x64, azure-bastion]
+
+    defaults:
+      run:
+        working-directory: infra/azure/terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Install Ansible and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ansible boto3 botocore
+          ~/.local/bin/ansible-galaxy collection install amazon.aws community.general
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Read Terraform outputs
+        run: |
+          echo "AZURE_STORAGE_NAME=$(terraform output -raw azure_storage_account_name)" >> $GITHUB_ENV
+          echo "AZURE_STORAGE_KEY=$(terraform output -raw azure_storage_primary_key)" >> $GITHUB_ENV
+          echo "BROKER_PUBLIC_IP=$(terraform output -raw broker_public_ip)" >> $GITHUB_ENV
+          echo "BROKER_PRIV_IP=$(terraform output -raw broker_private_ip)" >> $GITHUB_ENV
+          echo "CONSUMER_PRIV_IP=$(terraform output -raw consumer_private_ip)" >> $GITHUB_ENV
+          echo "VM_USER=$(terraform output -raw admin_username)" >> $GITHUB_ENV
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Generate Ansible inventory
+        run: |
+          cat <<EOF > azure_hosts.ini
+          [azure_broker]
+          broker-vm ansible_host=${BROKER_PRIV_IP}
+
+          [azure_consumer]
+          consumer-vm ansible_host=${CONSUMER_PRIV_IP}
+
+          [azure_vms:children]
+          azure_broker
+          azure_consumer
+
+          [azure_vms:vars]
+          ansible_user=${VM_USER}
+          ansible_ssh_private_key_file=~/.ssh/id_rsa
+          ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+          EOF
+
+      - name: Run Ansible playbook
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          terraform -chdir=../../aws/terraform/data init -reconfigure \
+            -backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -backend-config="region=${{ vars.AWS_REGION }}"
+
+          RDS_ADDR=$(terraform -chdir=../../aws/terraform/data output -raw db_endpoint)
+
+          if [ ! -f "../ansible/roles/kafka-consumer/files/processor.py" ]; then
+            echo "Error: processor.py missing in roles/kafka-consumer/files/"
+            exit 1
+          fi
+
+          ~/.local/bin/ansible-playbook -i azure_hosts.ini ../ansible/playbook.yml \
+            -e "rds_endpoint=${RDS_ADDR}" \
+            -e "aws_region=${{ vars.AWS_REGION }}" \
+            -e "dockerhub_username=${{ secrets.DOCKERHUB_USERNAME }}" \
+            -e "broker_public_ip=${BROKER_PUBLIC_IP}" \
+            -e "broker_internal_ip=${BROKER_PRIV_IP}" \
+            -e "azure_storage_account_name=${{ env.AZURE_STORAGE_NAME }}" \
+            -e "azure_storage_primary_key=${{ env.AZURE_STORAGE_KEY }}" \
+            -e "db_name=vehicle_db" \
+            -e "db_user=dbadmin"

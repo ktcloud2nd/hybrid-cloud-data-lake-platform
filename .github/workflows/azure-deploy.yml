@@ -1,10 +1,10 @@
-name: 'Azure Infrastructure Deploy'
+﻿name: 'Azure Bootstrap Deploy'
 
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: '실행할 작업을 선택하세요.' # apply: 생성 / destroy: 삭제
+        description: '실행할 작업을 선택하세요'
         required: true
         default: 'apply'
         type: choice
@@ -13,7 +13,6 @@ on:
         - destroy
 
 env:
-  # Azure에 로그인하기 위한 인증 정보
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -21,8 +20,6 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-
-  # variables.tf로 밀어 넣을 비밀 정보
   TF_VAR_public_key: ${{ secrets.AZURE_PUBLIC_KEY }}
   TF_VAR_onprem_ip: ${{ secrets.ONPREM_SOURCE_IP }}
 
@@ -33,26 +30,24 @@ jobs:
     if: ${{ github.event.inputs.action == 'apply' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Kafka Connect 이미지 빌드
       - name: Build and Push Kafka Connect Image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: ./infra/azure/ansible/roles/kafka-consumer/templates
           file: ./infra/azure/ansible/roles/kafka-consumer/templates/Dockerfile.j2
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/custom-kafka-connect:latest
 
-      # 온프레미스 시뮬레이터 이미지 빌드
       - name: Build and Push Edge Simulator Image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: ./infra/edge
           file: ./infra/edge/Dockerfile
@@ -60,11 +55,11 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/vehicle-simulator:latest
 
   terraform-azure:
-    name: 'Terraform Azure'
-    needs: build-image # 빌드가 성공해야 배포 시작
+    name: 'Terraform Azure Bootstrap'
+    needs: build-image
     if: |
       always() &&
-      (github.event.inputs.action == 'destroy' || 
+      (github.event.inputs.action == 'destroy' ||
       (github.event.inputs.action == 'apply' && needs.build-image.result == 'success'))
     runs-on: ubuntu-latest
 
@@ -73,135 +68,36 @@ jobs:
         working-directory: infra/azure/terraform
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # AWS 인증 정보 설정 (SSM에서 비번을 읽어오기 위해 반드시 필요)
-    # S3 Backand 읽어야 함
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ vars.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        terraform_wrapper: false
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
-    - name: Terraform Init
-      run: terraform init
+      - name: Terraform Init
+        run: terraform init
 
-    - name: Terraform Apply
-      if: ${{ github.event.inputs.action == 'apply' }}
-      run: terraform apply -auto-approve
+      - name: Terraform Apply
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: terraform apply -auto-approve
 
-    - name: Terraform Destroy
-      if: ${{ github.event.inputs.action == 'destroy' }}
-      run: terraform destroy -auto-approve
+      - name: Terraform Destroy
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: terraform destroy -auto-approve
 
-    # ----- Apply 성공 시 실행되는 후속 작업들 -----
-
-    # 스토리지 정보 추출 (jq 사용)
-    - name: Get Storage Info from Terraform
-      if: ${{ github.event.inputs.action == 'apply' }}
-      run: |
-        STORAGE_NAME=$(terraform output -json azure_storage_account_name | jq -r .)
-        STORAGE_KEY=$(terraform output -json azure_storage_primary_key | jq -r .)
-        echo "AZURE_STORAGE_NAME=${STORAGE_NAME}" >> $GITHUB_ENV
-        echo "AZURE_STORAGE_KEY=${STORAGE_KEY}" >> $GITHUB_ENV
-
-    # SSH 개인 키 설정 (Ansible 접속용)
-    - name: Set up SSH Key
-      if: ${{ github.event.inputs.action == 'apply' }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.AZURE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-
-    # SSH 서비스 준비 기다림
-    - name: Wait for SSH service to boot
-      if: ${{ github.event.inputs.action == 'apply' }}
-      run: sleep 30
-
-    # Inventory 생성
-    - name: Generate Ansible Inventory
-      if: ${{ github.event.inputs.action == 'apply' }}
-      run: |
-        BASTION_IP=$(terraform output -json bastion_public_ip | jq -r .)
-        BROKER_IP=$(terraform output -json broker_public_ip | jq -r .)
-        CONSUMER_PRIV_IP=$(terraform output -json consumer_private_ip | jq -r .)
-        VM_USER=$(terraform output -json admin_username | jq -r .)
-
-        echo "Generating inventory with Bastion($BASTION_IP), Broker($BROKER_IP), Consumer($CONSUMER_PRIV_IP)"
-
-        cat <<EOF > azure_hosts.ini
-        [bastion]
-        bastion-host ansible_host=${BASTION_IP}
-
-        [azure_broker]
-        broker-vm ansible_host=${BROKER_IP}
-
-        [azure_consumer]
-        consumer-vm ansible_host=${CONSUMER_PRIV_IP}
-
-        [azure_vms:children]
-        azure_broker
-        azure_consumer
-
-        [azure_vms:vars]
-        ansible_user=${VM_USER}
-        ansible_ssh_private_key_file=~/.ssh/id_rsa
-        ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-
-        [azure_consumer:vars]
-        ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -q ${VM_USER}@${BASTION_IP} -o StrictHostKeyChecking=no"'
-        EOF
-
-    # AWS와 통신하기 위한 필수 라이브러리 설치 (앤서블 전용 환경에 주입)
-    - name: Install dependencies for Ansible AWS lookup
-      if: ${{ github.event.inputs.action == 'apply' }}
-      run: |
-        # 앤서블이 사용하는 가상환경 안에 boto3와 botocore를 강제로 주입
-        pipx inject ansible-core boto3 botocore
-        
-        # 앤서블 컬렉션 설치
-        ansible-galaxy collection install amazon.aws community.general
-
-    # Ansible 실행
-    - name: Run Ansible Playbook
-      if: ${{ github.event.inputs.action == 'apply' }}
-      env:
-        # AWS 자격 증명을 실행 시점에 명시적으로 다시 주입
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
-      run: |
-        # AWS 데이터 폴더 초기화 (S3 금고 열기)
-        terraform -chdir=../../aws/terraform/data init -reconfigure \
-          -backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" \
-          -backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-          -backend-config="region=${{ vars.AWS_REGION }}"
-        
-        # S3에 저장된 output 읽기
-        RDS_ADDR=$(terraform -chdir=../../aws/terraform/data output -json db_endpoint | jq -r .)
-
-        BROKER_IP=$(terraform output -json broker_public_ip | jq -r .)
-        BROKER_PRIV_IP=$(terraform output -json broker_private_ip | jq -r .)
- 
-        if [ ! -f "../ansible/roles/kafka-consumer/files/processor.py" ]; then
-          echo "Error: processor.py missing in roles/kafka-consumer/files/"
-          exit 1
-        fi
-
-        ansible-playbook -i azure_hosts.ini ../ansible/playbook.yml \
-          -e "rds_endpoint=${RDS_ADDR}" \
-          -e "aws_region=${{ vars.AWS_REGION }}" \
-          -e "dockerhub_username=${{ secrets.DOCKERHUB_USERNAME }}" \
-          -e "broker_public_ip=${BROKER_IP}" \
-          -e "broker_internal_ip=${BROKER_PRIV_IP}" \
-          -e "azure_storage_account_name=${{ env.AZURE_STORAGE_NAME }}" \
-          -e "azure_storage_primary_key=${{ env.AZURE_STORAGE_KEY }}" \
-          -e "db_name=vehicle_db" \
-          -e "db_user=dbadmin"
+      - name: Show Bastion bootstrap info
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: |
+          echo "Bastion Public IP: $(terraform output -raw bastion_public_ip)"
+          echo "Broker Private IP: $(terraform output -raw broker_private_ip)"
+          echo "Consumer Private IP: $(terraform output -raw consumer_private_ip)"
+          echo "Next: install the self-hosted runner on bastion, then run Azure Configure via Bastion Runner."
