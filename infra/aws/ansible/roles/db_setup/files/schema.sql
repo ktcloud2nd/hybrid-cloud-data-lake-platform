@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS vehicle_stats (
     mode INT
 );
 
-CREATE INDEX idx_vehicle_timestamp ON vehicle_stats(vehicle_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_vehicle_timestamp ON vehicle_stats(vehicle_id, timestamp DESC);
 
 -- 이상 탐지 알람 테이블 (프로세서 코드의 'evidence' 필드와 호환되도록 수정)
 CREATE TABLE IF NOT EXISTS vehicle_anomaly_alerts (
@@ -60,4 +60,4 @@ CREATE TABLE IF NOT EXISTS vehicle_anomaly_alerts (
     occurred_at BIGINT                -- 실제 발생 시각 (occurred_at)
 );
 
-CREATE INDEX idx_anomaly_type ON vehicle_anomaly_alerts(anomaly_type);
+CREATE INDEX IF NOT EXISTS idx_anomaly_type ON vehicle_anomaly_alerts(anomaly_type);
