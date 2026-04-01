@@ -1,0 +1,15 @@
+# auth-service를 내부 API로 둠 (외부 Ingress 필요 없음)
+# app.example.com/login과 admin.example.com/login 둘 다 내부적으로 auth-service 호출
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: user-app
+spec:
+  selector:
+    app: auth-web
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

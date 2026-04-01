@@ -1,0 +1,30 @@
+# 운영자 파드 (2개)
+# 실제 운영자 웹 이미지로 수정 필요
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: operator-web
+  namespace: operator-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: operator-web
+  template:
+    metadata:
+      labels:
+        app: operator-web
+    spec:
+      containers:
+        - name: operator-web
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
