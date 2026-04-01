@@ -1,0 +1,21 @@
+# Middleware 매니페스트
+# 사용자용이므로 너무 빡세게 막지 않고 기본만 둠
+# 안정화되면 SecRuleEngine DetectionOnly -> SecRuleEngine On
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: coraza-waf
+  namespace: user-app
+spec:
+  plugin:
+    coraza:
+      directives:
+        - SecRuleEngine DetectionOnly
+        - SecRequestBodyAccess On
+        - SecResponseBodyAccess Off
+        - SecAuditEngine RelevantOnly
+        - SecAuditLog /dev/stdout
+        - SecAuditLogFormat JSON
+        - SecRule REQUEST_METHOD "!@within GET HEAD POST OPTIONS" "id:100001,phase:1,log,deny,status:405,msg:'disallowed method'"
+        - SecRule REQUEST_URI "@beginsWith /admin" "id:100002,phase:1,log,deny,status:403,msg:'admin path is not allowed on user app'"

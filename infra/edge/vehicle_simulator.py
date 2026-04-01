@@ -46,7 +46,7 @@ vehicles = [
         "engine_on": True,
         "fuel_level": round(random.uniform(5, 100), 2)
     }
-    for i in range(50)
+    for i in range(100)
 ]
 
 def clamp(value, min_value, max_value):

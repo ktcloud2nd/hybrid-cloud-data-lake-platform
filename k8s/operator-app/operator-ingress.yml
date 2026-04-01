@@ -1,0 +1,23 @@
+# Ingress 매니페스트
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: operator-web-ingress
+  namespace: operator-app
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: operator-app-coraza-waf@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: admin.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: operator-web-service
+                port:
+                  number: 80
