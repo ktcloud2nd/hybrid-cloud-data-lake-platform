@@ -78,6 +78,24 @@ resource "aws_iam_role_policy" "aws_ccm_policy" {
 
 # 5. 인스턴스 프로파일 생성
 # main.tf의 각 aws_instance 리소스에서 iam_instance_profile 인자로 참조됩니다.
+resource "aws_iam_role_policy" "quicksight_embed_policy" {
+  name = "8team-quicksight-embed-policy"
+  role = aws_iam_role.k3s_node_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "quicksight:GenerateEmbedUrlForRegisteredUser"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "k3s_node_profile" {
   name = "8team-k3s-node-instance-profile"
   role = aws_iam_role.k3s_node_role.name

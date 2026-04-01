@@ -1,0 +1,134 @@
+---
+- name: Ensure login namespace backend config exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: web-platform-backend-config
+      namespace: login
+    data:
+      DB_HOST: "{{ db_endpoint }}"
+      DB_PORT: "{{ db_port | string }}"
+      DB_NAME: "{{ db_name }}"
+      DB_USER: "{{ db_username }}"
+      DB_SSL_MODE: "require"
+      DB_SSL_REJECT_UNAUTHORIZED: "false"
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure user namespace backend config exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: web-platform-backend-config
+      namespace: user-app
+    data:
+      DB_HOST: "{{ db_endpoint }}"
+      DB_PORT: "{{ db_port | string }}"
+      DB_NAME: "{{ db_name }}"
+      DB_USER: "{{ db_username }}"
+      DB_SSL_MODE: "require"
+      DB_SSL_REJECT_UNAUTHORIZED: "false"
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure operator namespace backend config exists
+  vars:
+    quicksight_allowed_domains_resolved: >-
+      {{
+        quicksight_allowed_domains
+        | default('https://' ~ (operator_app_host | default('admin.example.com')), true)
+      }}
+    grafana_embed_url_resolved: >-
+      {{
+        grafana_embed_url
+        | default('/grafana/d/k3s-infra-draft/k3s-infra-overview-draft?orgId=1&kiosk', true)
+      }}
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: web-platform-backend-config
+      namespace: operator-app
+    data:
+      DB_HOST: "{{ db_endpoint }}"
+      DB_PORT: "{{ db_port | string }}"
+      DB_NAME: "{{ db_name }}"
+      DB_USER: "{{ db_username }}"
+      DB_SSL_MODE: "require"
+      DB_SSL_REJECT_UNAUTHORIZED: "false"
+      GRAFANA_ENABLED: "true"
+      GRAFANA_BASE_URL: "/grafana"
+      GRAFANA_EMBED_URL: "{{ grafana_embed_url_resolved }}"
+      GRAFANA_ALLOW_EMBED: "true"
+      GRAFANA_PROVIDER: "self-hosted"
+      AWS_REGION: "{{ aws_region | default('ap-northeast-2') }}"
+      QUICKSIGHT_AWS_ACCOUNT_ID: "{{ quicksight_aws_account_id | default('', true) }}"
+      QUICKSIGHT_NAMESPACE: "{{ quicksight_namespace | default('default', true) }}"
+      QUICKSIGHT_ALLOWED_DOMAINS: "{{ quicksight_allowed_domains_resolved }}"
+      QUICKSIGHT_SESSION_LIFETIME_MINUTES: "{{ quicksight_session_lifetime_minutes | default('60', true) }}"
+      QUICKSIGHT_ANOMALY_DASHBOARD_ID: "{{ quicksight_anomaly_dashboard_id | default('', true) }}"
+      QUICKSIGHT_VEHICLE_DASHBOARD_ID: "{{ quicksight_vehicle_dashboard_id | default('', true) }}"
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure login namespace backend secret exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: web-platform-backend-secret
+      namespace: login
+    type: Opaque
+    stringData:
+      DB_PASSWORD: "{{ db_password }}"
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure user namespace backend secret exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: web-platform-backend-secret
+      namespace: user-app
+    type: Opaque
+    stringData:
+      DB_PASSWORD: "{{ db_password }}"
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure operator namespace backend secret exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: web-platform-backend-secret
+      namespace: operator-app
+    type: Opaque
+    stringData:
+      DB_PASSWORD: "{{ db_password }}"
+      QUICKSIGHT_REGISTERED_USER_ARN: "{{ quicksight_registered_user_arn | default('', true) }}"
+      QUICKSIGHT_ANOMALY_REGISTERED_USER_ARN: "{{ quicksight_anomaly_registered_user_arn | default('', true) }}"
+      QUICKSIGHT_VEHICLE_REGISTERED_USER_ARN: "{{ quicksight_vehicle_registered_user_arn | default('', true) }}"
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true

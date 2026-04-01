@@ -472,8 +472,30 @@ jobs:
         working-directory: infra/aws/ansible
         env:
           DB_PASS: ${{ secrets.RDS_PASSWORD }}
+          QUICKSIGHT_AWS_ACCOUNT_ID: ${{ secrets.QUICKSIGHT_AWS_ACCOUNT_ID }}
+          QUICKSIGHT_REGISTERED_USER_ARN: ${{ secrets.QUICKSIGHT_REGISTERED_USER_ARN }}
+          QUICKSIGHT_ANOMALY_REGISTERED_USER_ARN: ${{ secrets.QUICKSIGHT_ANOMALY_REGISTERED_USER_ARN }}
+          QUICKSIGHT_VEHICLE_REGISTERED_USER_ARN: ${{ secrets.QUICKSIGHT_VEHICLE_REGISTERED_USER_ARN }}
+          QUICKSIGHT_ANOMALY_DASHBOARD_ID: ${{ secrets.QUICKSIGHT_ANOMALY_DASHBOARD_ID }}
+          QUICKSIGHT_VEHICLE_DASHBOARD_ID: ${{ secrets.QUICKSIGHT_VEHICLE_DASHBOARD_ID }}
+          QUICKSIGHT_ALLOWED_DOMAINS: ${{ vars.QUICKSIGHT_ALLOWED_DOMAINS }}
+          QUICKSIGHT_SESSION_LIFETIME_MINUTES: ${{ vars.QUICKSIGHT_SESSION_LIFETIME_MINUTES }}
+          QUICKSIGHT_NAMESPACE: ${{ vars.QUICKSIGHT_NAMESPACE }}
+          GRAFANA_EMBED_URL: ${{ vars.GRAFANA_EMBED_URL }}
+          OPERATOR_APP_HOST: ${{ vars.OPERATOR_APP_HOST }}
         run: |
           ansible-playbook -i inventory/hosts.ini \
             --vault-password-file vault/vault_pass \
             -e "db_password=$DB_PASS" \
+            -e "quicksight_aws_account_id=$QUICKSIGHT_AWS_ACCOUNT_ID" \
+            -e "quicksight_registered_user_arn=$QUICKSIGHT_REGISTERED_USER_ARN" \
+            -e "quicksight_anomaly_registered_user_arn=$QUICKSIGHT_ANOMALY_REGISTERED_USER_ARN" \
+            -e "quicksight_vehicle_registered_user_arn=$QUICKSIGHT_VEHICLE_REGISTERED_USER_ARN" \
+            -e "quicksight_anomaly_dashboard_id=$QUICKSIGHT_ANOMALY_DASHBOARD_ID" \
+            -e "quicksight_vehicle_dashboard_id=$QUICKSIGHT_VEHICLE_DASHBOARD_ID" \
+            -e "quicksight_allowed_domains=$QUICKSIGHT_ALLOWED_DOMAINS" \
+            -e "quicksight_session_lifetime_minutes=$QUICKSIGHT_SESSION_LIFETIME_MINUTES" \
+            -e "quicksight_namespace=$QUICKSIGHT_NAMESPACE" \
+            -e "grafana_embed_url=$GRAFANA_EMBED_URL" \
+            -e "operator_app_host=$OPERATOR_APP_HOST" \
             playbooks/setup_k3s_cluster.yml

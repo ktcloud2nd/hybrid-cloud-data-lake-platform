@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-platform-backend-config
+  namespace: operator-app
+data:
+  DB_HOST: db.vehicle.internal
+  DB_PORT: "5432"
+  DB_NAME: vehicle_db
+  DB_USER: dbadmin
+  DB_SSL_MODE: require
+  DB_SSL_REJECT_UNAUTHORIZED: "false"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: web-platform-backend-secret
+  namespace: operator-app
+type: Opaque
+stringData:
+  DB_PASSWORD: REPLACE_WITH_RDS_PASSWORD

@@ -11,6 +11,7 @@ override.tf.json
 .vscode/
 .DS_Store
 Thumbs.db
+*.log
 *.tfvars
 terraform.tfvars
 !*.tfvars.example
@@ -18,4 +19,10 @@ terraform.tfvars
 CLAUDE.md
 infra/aws/ansible/inventory/hosts.ini
 infra/aws/ansible/vault/vault_pass
-
+apps/web-platform/frontend/node_modules/
+apps/web-platform/backend/node_modules/
+apps/web-platform/frontend/dist/
+apps/web-platform/backend/.env
+apps/web-platform/deploy.env
+apps/web-platform/.vite/
+apps/web-platform/coverage/

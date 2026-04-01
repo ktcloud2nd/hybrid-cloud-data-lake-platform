@@ -35,8 +35,15 @@ spec:
           ports:
             - containerPort: 4000
           envFrom:
+            - configMapRef:
+                name: web-platform-backend-config
+                optional: true
+            - secretRef:
+                name: web-platform-backend-secret
+                optional: true
             - secretRef:
                 name: db-secret
+                optional: true
           env:
             - name: APP_TARGET
               value: "login"

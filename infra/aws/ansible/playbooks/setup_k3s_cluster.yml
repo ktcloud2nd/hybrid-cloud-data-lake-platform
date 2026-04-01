@@ -11,49 +11,46 @@
   roles:
     - k3s_master
 
-- name: 데이터베이스 스키마 및 초기화
-  hosts: masters[0] # GitHub Runner가 아닌 마스터 노드 1번 EC2에서 실행
+- name: Initialize database schema from master node
+  hosts: masters[0]
   become: yes
   gather_facts: yes
   vars:
     db_password: "{{ lookup('aws_ssm', '/config/vehicle/db_password', decrypt=True, region='ap-northeast-2') }}"
   tasks:
-    # Runner가 아닌 EC2 내부에 직접 드라이버 설치
-    - name: EC2 내부에 Postgres 드라이버 설치
+    - name: Install PostgreSQL Python driver
       apt:
         name: python3-psycopg2
         state: present
         update_cache: yes
 
-    # 기존 db_setup 역할을 EC2 위에서 실행
-    - name: DB 초기화 역할 실행
+    - name: Apply web platform database schema
       include_role:
         name: db_setup
       vars:
-        # EC2 안의 파이썬을 사용해서 실행
         ansible_python_interpreter: /usr/bin/python3
         db_password: "{{ db_password }}"
 
-- name: Linkerd 서비스 메시 설치
+- name: Install Linkerd
   hosts: masters
   become: yes
   roles:
     - linkerd
 
-- name: Cluster Autoscaler 설치
+- name: Install Cluster Autoscaler
   hosts: masters
   become: yes
   roles:
     - cluster-autoscaler
 
-- name: AWS Cloud Controller Manager 설치
+- name: Install AWS Cloud Controller Manager
   hosts: masters
   become: yes
   serial: 1
   roles:
     - aws-ccm
 
-- name: Prometheus/Grafana 모니터링 스택 설치
+- name: Install Prometheus and Grafana
   hosts: masters
   become: yes
   vars_files:
@@ -61,7 +58,13 @@
   roles:
     - prometheus
 
-- name: ArgoCD 설치 및 Application 등록
+- name: Provision web-platform backend env and secrets
+  hosts: masters
+  become: yes
+  roles:
+    - web_platform_env
+
+- name: Install ArgoCD applications
   hosts: masters
   become: yes
   roles:
