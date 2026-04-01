@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: login
+  namespace: login
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: login
+  template:
+    metadata:
+      labels:
+        app: login
+    spec:
+      tolerations:
+        - key: nodetype
+          operator: Equal
+          value: user
+          effect: NoSchedule
+      nodeSelector:
+        role: user-worker
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: login
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: login
+          image: __DOCKERHUB_USERNAME__/login:latest  # Docker Hub 계정명으로 교체
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

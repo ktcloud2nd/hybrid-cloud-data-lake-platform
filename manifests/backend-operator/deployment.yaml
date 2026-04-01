@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-operator
+  namespace: operator-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-operator
+  template:
+    metadata:
+      labels:
+        app: backend-operator
+    spec:
+      tolerations:
+        - key: nodetype
+          operator: Equal
+          value: operator
+          effect: NoSchedule
+      nodeSelector:
+        role: operator-worker
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: backend-operator
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: backend-operator
+          image: __DOCKERHUB_USERNAME__/backend-operator:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: APP_TARGET
+              value: "operator"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-operator
+  namespace: operator-app
+spec:
+  selector:
+    app: backend-operator
+  ports:
+    - port: 4000
+      targetPort: 4000
+  type: ClusterIP

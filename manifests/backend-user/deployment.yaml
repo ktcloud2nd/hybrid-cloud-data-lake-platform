@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-user
+  namespace: user-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-user
+  template:
+    metadata:
+      labels:
+        app: backend-user
+    spec:
+      tolerations:
+        - key: nodetype
+          operator: Equal
+          value: user
+          effect: NoSchedule
+      nodeSelector:
+        role: user-worker
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: backend-user
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: backend-user
+          image: __DOCKERHUB_USERNAME__/backend-user:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: APP_TARGET
+              value: "user"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
