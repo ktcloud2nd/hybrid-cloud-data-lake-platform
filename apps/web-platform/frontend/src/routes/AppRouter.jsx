@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AppRedirect from '../components/AppRedirect';
-import { appTarget, getDefaultPathForRole, getLoginUrl } from '../config/appTarget';
+import { appTarget, getDefaultPathForRole } from '../config/appTarget';
 import LoginPage from '../pages/auth/LoginPage';
 import UserDashboardPage from '../pages/user/UserDashboardPage';
 import OperatorDashboardPage from '../pages/operator/OperatorDashboardPage';
@@ -10,21 +10,28 @@ import OperatorInfraServicePage from '../pages/operator/OperatorInfraServicePage
 import ProtectedRoute from './ProtectedRoute';
 import { getStoredSession } from '../utils/authStorage';
 
-function LoginRoute() {
+function LoginRoute({ allowedRole, defaultPath }) {
   const session = getStoredSession();
 
   if (!session) {
-    return <LoginPage />;
+    return <LoginPage allowedRole={allowedRole} />;
   }
 
-  return <AppRedirect to={getDefaultPathForRole(session.role)} replace />;
+  if (allowedRole && session.role !== allowedRole) {
+    return <AppRedirect to={getDefaultPathForRole(session.role)} replace />;
+  }
+
+  return <Navigate to={defaultPath} replace />;
 }
 
 function UserRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/user/dashboard" replace />} />
-      <Route path="/login" element={<AppRedirect to={getLoginUrl()} replace />} />
+      <Route
+        path="/login"
+        element={<LoginRoute allowedRole="user" defaultPath="/user/dashboard" />}
+      />
       <Route
         path="/user/dashboard"
         element={
@@ -42,7 +49,15 @@ function OperatorRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/operator/infra-service" replace />} />
-      <Route path="/login" element={<AppRedirect to={getLoginUrl()} replace />} />
+      <Route
+        path="/login"
+        element={
+          <LoginRoute
+            allowedRole="operator"
+            defaultPath="/operator/infra-service"
+          />
+        }
+      />
       <Route
         path="/operator/dashboard"
         element={
@@ -131,16 +146,6 @@ function FullRoutes() {
 }
 
 function AppRouter() {
-  if (appTarget === 'login') {
-    return (
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginRoute />} />
-        <Route path="*" element={<AppRedirect to={getLoginUrl()} replace />} />
-      </Routes>
-    );
-  }
-
   if (appTarget === 'user') {
     return <UserRoutes />;
   }

@@ -1,4 +1,4 @@
-const SUPPORTED_TARGETS = new Set(['all', 'login', 'user', 'operator']);
+const SUPPORTED_TARGETS = new Set(['all', 'user', 'operator']);
 
 const requestedTarget = (import.meta.env.VITE_APP_TARGET || 'all').toLowerCase();
 
@@ -7,10 +7,9 @@ export const appTarget = SUPPORTED_TARGETS.has(requestedTarget)
   : 'all';
 
 export const appUrls = {
-  login: import.meta.env.VITE_LOGIN_APP_URL || '/login',
-  user: import.meta.env.VITE_USER_APP_URL || '/user/dashboard',
+  user: import.meta.env.VITE_USER_APP_URL || 'https://app.example.com',
   operator:
-    import.meta.env.VITE_OPERATOR_APP_URL || '/operator/infra-service'
+    import.meta.env.VITE_OPERATOR_APP_URL || 'https://admin.example.com'
 };
 
 export function getDefaultPathForRole(role) {
@@ -18,7 +17,7 @@ export function getDefaultPathForRole(role) {
 }
 
 export function getLoginUrl() {
-  return appUrls.login;
+  return '/login';
 }
 
 export function isExternalUrl(url) {

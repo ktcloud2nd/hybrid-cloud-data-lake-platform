@@ -17,7 +17,7 @@ const initialSignupForm = {
   modelCode: '1'
 };
 
-function LoginPage() {
+function LoginPage({ allowedRole = null }) {
   const navigate = useNavigate();
   const [mode, setMode] = useState('login');
   const [loginForm, setLoginForm] = useState(initialLoginForm);
@@ -64,6 +64,16 @@ function LoginPage() {
 
     try {
       const result = await login(loginForm);
+
+      if (allowedRole && result.role !== allowedRole) {
+        setErrorMessage(
+          allowedRole === 'operator'
+            ? '운영자 계정으로 로그인해야 합니다.'
+            : '사용자 계정으로 로그인해야 합니다.'
+        );
+        return;
+      }
+
       setStoredSession(result);
 
       const destinationUrl = new URL(
@@ -136,8 +146,8 @@ function LoginPage() {
         <h1>{mode === 'login' ? 'Web Platform Login' : 'Web Platform Sign Up'}</h1>
         <p>
           {mode === 'login'
-            ? 'Sign in from the dedicated login frontend and move to the role-specific app.'
-            : 'Create a new account to access the separated user application.'}
+            ? 'Sign in to continue to your assigned application.'
+            : 'Create a new account to access the user application.'}
         </p>
 
         {errorMessage ? <div className="auth-message error">{errorMessage}</div> : null}

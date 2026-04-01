@@ -11,6 +11,46 @@ body {
   color: #142033;
 }
 
+body.operator-theme {
+  background:
+    radial-gradient(circle at top, rgba(39, 76, 119, 0.16), transparent 28%),
+    linear-gradient(180deg, #e8eef6 0%, #f4f7fb 45%, #dde6f0 100%);
+}
+
+body.operator-theme .brand-role {
+  color: #7f9fc5;
+}
+
+body.operator-theme .logout-button,
+body.operator-theme .auth-switch-button.active,
+body.operator-theme .login-form button {
+  background: #3f5f86;
+}
+
+body.operator-theme .logout-button:hover,
+body.operator-theme .auth-switch-button.active:hover,
+body.operator-theme .login-form button:hover {
+  background: #345170;
+}
+
+body.operator-theme .section-badge {
+  background: #d8e2ee;
+  color: #365473;
+}
+
+body.operator-theme .section-link,
+body.operator-theme .ghost-link {
+  color: #365473;
+}
+
+body.operator-theme .ghost-link {
+  border-color: rgba(63, 95, 134, 0.18);
+}
+
+body.operator-theme .eyebrow {
+  color: #365473;
+}
+
 a {
   color: inherit;
   text-decoration: none;
