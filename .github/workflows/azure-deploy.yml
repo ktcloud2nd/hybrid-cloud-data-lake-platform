@@ -193,6 +193,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install runner dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip jq curl
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:

@@ -14,6 +14,9 @@ RUNNER_VERSION="${RUNNER_VERSION:-2.325.0}"
 RUNNER_LABELS="${RUNNER_LABELS:-azure-bastion}"
 RUNNER_DIR="${RUNNER_DIR:-$HOME/actions-runner}"
 
+sudo apt-get update
+sudo apt-get install -y unzip curl jq
+
 mkdir -p "$RUNNER_DIR"
 cd "$RUNNER_DIR"
 

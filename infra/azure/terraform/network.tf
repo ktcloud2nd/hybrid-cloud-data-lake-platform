@@ -60,7 +60,7 @@ resource "azurerm_subnet_nat_gateway_association" "consumer_subnet_nat" {
 }
 
 # Broker는 온프렘 Kafka 트래픽과 VNet 내부 SSH만 허용
-resource "azurerm_network_security_group" "broker_private_nsg" {
+resource "azurerm_network_security_group" "broker_nsg" {
   name                = "broker-private-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -91,7 +91,7 @@ resource "azurerm_network_security_group" "broker_private_nsg" {
 }
 
 # Consumer는 VNet 내부 SSH만 허용
-resource "azurerm_network_security_group" "consumer_private_nsg" {
+resource "azurerm_network_security_group" "consumer_nsg" {
   name                = "consumer-private-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -145,12 +145,12 @@ resource "azurerm_network_security_group" "bastion_nsg" {
 # Subnet에 실제 사용할 NSG 연결
 resource "azurerm_subnet_network_security_group_association" "broker_assoc" {
   subnet_id                 = azurerm_subnet.broker_subnet.id
-  network_security_group_id = azurerm_network_security_group.broker_private_nsg.id
+  network_security_group_id = azurerm_network_security_group.broker_nsg.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "consumer_assoc" {
   subnet_id                 = azurerm_subnet.consumer_subnet.id
-  network_security_group_id = azurerm_network_security_group.consumer_private_nsg.id
+  network_security_group_id = azurerm_network_security_group.consumer_nsg.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "bastion_assoc" {
