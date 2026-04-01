@@ -40,6 +40,8 @@ spec:
           env:
             - name: APP_TARGET
               value: "user"
+            - name: CORS_ALLOWED_ORIGINS
+              value: "http://ktcloud2nd-alb-1889724302.ap-northeast-2.elb.amazonaws.com"
           resources:
             requests:
               cpu: 100m
