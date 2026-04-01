@@ -21,7 +21,6 @@
   until: result.rc == 0
   register: result
   failed_when: false
-  run_once: true
   when: k3s_config_changed.changed
 
 - name: AWS CCM Helm repo 추가
@@ -52,7 +51,7 @@
   run_once: true
 
 - name: AWS CCM 파드 준비 완료 대기
-  command: kubectl rollout status deployment/aws-cloud-controller-manager -n kube-system --timeout=180s
+  command: kubectl rollout status daemonset/aws-cloud-controller-manager -n kube-system --timeout=180s
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true

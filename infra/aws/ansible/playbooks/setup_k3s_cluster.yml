@@ -47,8 +47,9 @@
     - cluster-autoscaler
 
 - name: AWS Cloud Controller Manager 설치
-  hosts: masters[0]
+  hosts: masters
   become: yes
+  serial: 1
   roles:
     - aws-ccm
 

@@ -164,7 +164,7 @@ resource "aws_autoscaling_group" "worker_user_asg" {
   name                = "${local.name_prefix}-worker-user-asg"
   desired_capacity    = 2
   min_size            = 2
-  max_size            = 6
+  max_size            = 2
   vpc_zone_identifier = [local.private_subnet_a, local.private_subnet_c]
 
   launch_template {
@@ -201,7 +201,7 @@ resource "aws_autoscaling_group" "worker_op_asg" {
   name                = "${local.name_prefix}-worker-op-asg"
   desired_capacity    = 2
   min_size            = 2
-  max_size            = 4
+  max_size            = 2
   vpc_zone_identifier = [local.private_subnet_a, local.private_subnet_c]
 
   launch_template {
