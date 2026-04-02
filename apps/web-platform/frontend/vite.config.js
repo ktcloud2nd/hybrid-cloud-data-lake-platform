@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const appTarget = process.env.VITE_APP_TARGET || 'all';
-const base = appTarget === 'login' ? '/login/' : appTarget === 'user' ? '/user/' : appTarget === 'operator' ? '/operator/' : '/';
+const base = '/';
 
 export default defineConfig({
   base,
