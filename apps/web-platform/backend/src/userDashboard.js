@@ -53,6 +53,20 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return 2 * earthRadiusKm * Math.asin(Math.sqrt(a));
 }
 
+function toCoordinatePair(row) {
+  const latitude = Number(row.lat);
+  const longitude = Number(row.lon);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return {
+    lat: latitude,
+    lon: longitude
+  };
+}
+
 function buildTripSummary(statsRows) {
   if (!statsRows.length) {
     return {
@@ -66,17 +80,18 @@ function buildTripSummary(statsRows) {
   const rows = [...statsRows].sort(
     (a, b) => toNumber(a.timestamp) - toNumber(b.timestamp)
   );
+  const validRows = rows.filter((row) => toCoordinatePair(row));
   let distanceKm = 0;
 
-  for (let index = 1; index < rows.length; index += 1) {
-    const previous = rows[index - 1];
-    const current = rows[index];
+  for (let index = 1; index < validRows.length; index += 1) {
+    const previous = toCoordinatePair(validRows[index - 1]);
+    const current = toCoordinatePair(validRows[index]);
 
     distanceKm += haversineKm(
-      toNumber(previous.lat),
-      toNumber(previous.lon),
-      toNumber(current.lat),
-      toNumber(current.lon)
+      previous.lat,
+      previous.lon,
+      current.lat,
+      current.lon
     );
   }
 
@@ -101,7 +116,12 @@ function buildTripSummary(statsRows) {
     distance: `${distanceKm.toFixed(1)} km`,
     duration: `${durationMinutes} min`,
     averageSpeed: `${averageSpeed} km/h`,
-    destination: `${toNumber(latest.lat).toFixed(4)}, ${toNumber(latest.lon).toFixed(4)}`
+    destination: (() => {
+      const latestCoordinates = toCoordinatePair(latest);
+      return latestCoordinates
+        ? `${latestCoordinates.lat.toFixed(4)}, ${latestCoordinates.lon.toFixed(4)}`
+        : 'No recent destination';
+    })()
   };
 }
 
@@ -154,10 +174,10 @@ export async function loadUserDashboard(userId) {
 
   const alertsResult = await query(
     `
-      SELECT id, alert_time, vehicle_id, anomaly_type, description, evidence, occurred_at
+      SELECT id, vehicle_id, anomaly_type, description, evidence, occurred_at
       FROM vehicle_anomaly_alerts
       WHERE vehicle_id = $1
-      ORDER BY occurred_at DESC NULLS LAST, alert_time DESC
+      ORDER BY occurred_at DESC
       LIMIT 3
     `,
     [account.vehicleId]
@@ -230,7 +250,7 @@ export async function loadUserDashboard(userId) {
         alert.description ||
         alert.evidence ||
         'A recent vehicle event was detected.',
-      time: formatTime(alert.occurred_at || alert.alert_time)
+      time: formatTime(alert.occurred_at)
     }))
   };
 }

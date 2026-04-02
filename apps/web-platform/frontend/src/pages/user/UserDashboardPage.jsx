@@ -200,6 +200,7 @@ function UserDashboardPage() {
     () => Math.min(Math.round(extractNumber(dashboard.mainStatus.fuel)), 100),
     [dashboard.mainStatus.fuel]
   );
+  const latestAlert = dashboard.alerts[0] ?? null;
 
   return (
     <DashboardLayout
@@ -406,10 +407,10 @@ function UserDashboardPage() {
 
             <InfoCard title="Latest Alert">
               <strong className="block text-[1.5rem] font-extrabold text-slate-800">
-                {dashboard.alerts[2]?.title ?? '-'}
+                {latestAlert?.title ?? '-'}
               </strong>
               <p className="mt-2 text-[1rem] text-slate-500">
-                {dashboard.alerts[2]?.message ?? '-'}
+                {latestAlert?.message ?? '-'}
               </p>
             </InfoCard>
           </section>
