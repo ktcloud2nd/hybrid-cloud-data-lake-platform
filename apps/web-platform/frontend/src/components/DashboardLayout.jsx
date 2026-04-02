@@ -2,7 +2,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { appTarget, getLoginUrl, isExternalUrl } from '../config/appTarget';
 import { clearStoredSession, getStoredSession } from '../utils/authStorage';
 
-function DashboardLayout({ role, userId, title, metaContent = null, description, tabs = [], children }) {
+function DashboardLayout({
+  role,
+  userId,
+  title,
+  metaContent = null,
+  description,
+  tabs = [],
+  hideIntro = false,
+  children
+}) {
   const location = useLocation();
   const navigate = useNavigate();
   const session = getStoredSession();
@@ -74,11 +83,13 @@ function DashboardLayout({ role, userId, title, metaContent = null, description,
       </header>
 
       <main className="page dashboard-page app-shell-page operator-page">
-        <div className="page-intro">
-          <h1>{title}</h1>
-          {metaContent}
-          {description ? <p className="dashboard-description">{description}</p> : null}
-        </div>
+        {!hideIntro ? (
+          <div className="page-intro">
+            <h1>{title}</h1>
+            {metaContent}
+            {description ? <p className="dashboard-description">{description}</p> : null}
+          </div>
+        ) : null}
         {children}
       </main>
     </div>
