@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchModelCodes, login, signup } from '../../api/auth';
-import { getDefaultPathForRole, isExternalUrl } from '../../config/appTarget';
+import { appTarget, getDefaultPathForRole, isExternalUrl } from '../../config/appTarget';
 import { encodeSession, setStoredSession } from '../../utils/authStorage';
 
 const initialLoginForm = {
@@ -19,6 +19,7 @@ const initialSignupForm = {
 
 function LoginPage({ allowedRole = null }) {
   const navigate = useNavigate();
+  const portalName = appTarget === 'operator' ? 'Vehicle Admin Portal' : 'Vehicle Portal';
   const [mode, setMode] = useState('login');
   const [loginForm, setLoginForm] = useState(initialLoginForm);
   const [signupForm, setSignupForm] = useState(initialSignupForm);
@@ -143,7 +144,7 @@ function LoginPage({ allowedRole = null }) {
           </button>
         </div>
 
-        <h1>{mode === 'login' ? 'Web Platform Login' : 'Web Platform Sign Up'}</h1>
+        <h1>{mode === 'login' ? `${portalName} Login` : `${portalName} Sign Up`}</h1>
         <p>
           {mode === 'login'
             ? 'Sign in to continue to your assigned application.'

@@ -6,6 +6,8 @@ import { consumeSessionFromUrl } from './utils/authStorage';
 function App() {
   useEffect(() => {
     consumeSessionFromUrl();
+    document.title =
+      appTarget === 'operator' ? 'Vehicle Admin Portal' : 'Vehicle Portal';
 
     document.body.classList.remove('operator-theme');
 

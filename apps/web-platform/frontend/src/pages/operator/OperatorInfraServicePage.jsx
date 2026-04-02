@@ -3,9 +3,9 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { fetchGrafanaEmbed } from '../../api/grafana';
 
 const operatorTabs = [
-  { label: 'Anomaly', path: '/operator/anomaly' },
-  { label: 'Vehicle', path: '/operator/vehicle' },
-  { label: 'Infra Service', path: '/operator/infra-service' }
+  { label: '이상 탐지', path: '/operator/anomaly' },
+  { label: '차량 목록', path: '/operator/vehicle' },
+  { label: '인프라 모니터링', path: '/operator/infra-service' }
 ];
 
 export default function OperatorInfraServicePage() {

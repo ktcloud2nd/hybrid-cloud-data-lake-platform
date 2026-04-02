@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getLoginUrl, isExternalUrl } from '../config/appTarget';
+import { appTarget, getLoginUrl, isExternalUrl } from '../config/appTarget';
 import { clearStoredSession, getStoredSession } from '../utils/authStorage';
 
 function DashboardLayout({ role, userId, title, metaContent = null, description, tabs = [], children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const session = getStoredSession();
+  const brandTitle = appTarget === 'operator' ? 'Vehicle Admin Portal' : 'Vehicle Portal';
 
   const resolvedRole = role || session?.role?.toUpperCase() || 'USER';
   const resolvedUserId =
@@ -40,7 +41,7 @@ function DashboardLayout({ role, userId, title, metaContent = null, description,
       <header className="topbar">
         <div className="topbar-left">
           <div className="brand-block">
-            <span className="brand-title">Web Platform</span>
+            <span className="brand-title">{brandTitle}</span>
             <span className="brand-role">{resolvedRole}</span>
           </div>
 
