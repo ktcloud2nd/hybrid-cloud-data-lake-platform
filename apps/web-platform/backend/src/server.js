@@ -16,6 +16,7 @@ import { loadUserDashboard } from './userDashboard.js';
 const app = express();
 const port = Number(process.env.PORT || 4000);
 const appTarget = (process.env.APP_TARGET || 'all').toLowerCase();
+const sessionTtlSeconds = Number(process.env.SESSION_TTL_SECONDS || 60 * 60);
 const allowedOrigins =
   process.env.CORS_ALLOWED_ORIGINS?.split(',')
     .map((origin) => origin.trim())
@@ -77,7 +78,16 @@ async function verifySessionToken(authorizationHeader) {
     return null;
   }
 
-  if (!payload?.userId || !payload?.role) {
+  if (!payload?.userId || !payload?.role || !Number.isInteger(payload.issuedAt)) {
+    return null;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+
+  if (
+    payload.issuedAt > now ||
+    now - payload.issuedAt > sessionTtlSeconds
+  ) {
     return null;
   }
 
