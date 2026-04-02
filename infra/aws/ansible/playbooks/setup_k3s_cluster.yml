@@ -61,6 +61,10 @@
 - name: Provision web-platform backend env and secrets
   hosts: masters
   become: yes
+  vars_files:
+    - ../roles/db_setup/vars/main.yml
+  vars:
+    db_password: "{{ lookup('aws_ssm', '/config/vehicle/db_password', decrypt=True, region='ap-northeast-2') }}"
   roles:
     - web_platform_env
 

@@ -6,6 +6,15 @@ function isTruthy(value) {
   return ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase());
 }
 
+function hasExplicitSslSetting() {
+  return [
+    process.env.DB_SSL,
+    process.env.DB_SSL_MODE,
+    process.env.PGSSLMODE,
+    process.env.DB_SSL_REJECT_UNAUTHORIZED
+  ].some((value) => value !== undefined && value !== '');
+}
+
 function createSslConfig() {
   const sslMode = (
     process.env.DB_SSL_MODE ||
@@ -51,13 +60,19 @@ function createPoolConfig() {
   }
 
   if (process.env.DB_HOST) {
+    const shouldApplyDefaultSplitDbSsl = !ssl && !hasExplicitSslSetting();
+
     return {
       host: process.env.DB_HOST,
       port: Number(process.env.DB_PORT || 5432),
       database: process.env.DB_NAME,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      ...(ssl ? { ssl } : {})
+      ...(ssl
+        ? { ssl }
+        : shouldApplyDefaultSplitDbSsl
+          ? { ssl: { rejectUnauthorized: false } }
+          : {})
     };
   }
 
