@@ -12,10 +12,12 @@ function createSslConfig() {
     process.env.PGSSLMODE ||
     ''
   ).toLowerCase();
-  const sslEnabled = isTruthy(process.env.DB_SSL) || Boolean(sslMode);
   const rejectUnauthorized = !['false', '0', 'no', 'off'].includes(
     String(process.env.DB_SSL_REJECT_UNAUTHORIZED || 'true').toLowerCase()
   );
+  const sslModeRequiresTls = ['require', 'verify-ca', 'verify-full', 'no-verify'].includes(sslMode);
+  const sslDisabledByMode = ['', 'disable', 'allow', 'prefer'].includes(sslMode);
+  const sslEnabled = isTruthy(process.env.DB_SSL) || (!sslDisabledByMode && sslModeRequiresTls);
 
   if (!sslEnabled) {
     return undefined;
