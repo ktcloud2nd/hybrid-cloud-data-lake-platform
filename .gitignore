@@ -21,6 +21,7 @@ infra/aws/ansible/inventory/hosts.ini
 infra/aws/ansible/vault/vault_pass
 apps/web-platform/frontend/node_modules/
 apps/web-platform/backend/node_modules/
+infra/aws/lambda/slack-anomaly-notifier/node_modules/
 apps/web-platform/frontend/dist/
 apps/web-platform/backend/.env
 apps/web-platform/deploy.env
