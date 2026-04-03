@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { fetchAnomalyDashboard } from '../../api/anomalyDashboard';
 
-const REFRESH_INTERVAL_MS = 5 * 1000;
+const REFRESH_INTERVAL_MS = 1 * 1000;
 const numberFormatter = new Intl.NumberFormat('ko-KR');
 
 const operatorTabs = [
@@ -14,43 +14,35 @@ const operatorTabs = [
 const KPI_ITEMS = [
   {
     key: 'totalAlerts',
-    label: '현재 이상탐지 건수',
-    helper: '전체 누적 이상 건수'
+    label: '현재 이상탐지 건수'
   },
   {
     key: 'affectedVehicles',
-    label: '이상 발생 차량 수',
-    helper: '이상 이력이 있는 차량 수'
+    label: '이상 발생 차량 수'
   },
   {
     key: 'suddenDecelCount',
-    label: '급감속 건수',
-    helper: 'SUDDEN_DECEL'
+    label: '급감속 건수'
   },
   {
     key: 'suddenAccelCount',
-    label: '급가속 건수',
-    helper: 'SUDDEN_ACCEL'
+    label: '급가속 건수'
   },
   {
     key: 'lowFuelCount',
-    label: '연료 부족 건수',
-    helper: 'LOW_FUEL'
+    label: '연료 부족 건수'
   },
   {
     key: 'abnormalGpsCount',
-    label: 'GPS 이상 건수',
-    helper: 'ABNORMAL_GPS'
+    label: 'GPS 이상 건수'
   },
   {
     key: 'dataBurstCount',
-    label: '데이터 폭주 건수',
-    helper: 'DATA_BURST'
+    label: '데이터 폭주 건수'
   },
   {
     key: 'missingDataCount',
-    label: '데이터 미수신 건수',
-    helper: 'MISSING_DATA'
+    label: '데이터 미수신 건수'
   }
 ];
 
@@ -122,7 +114,6 @@ function DonutChart({ totalAlerts, items }) {
       <div className="operator-anomaly-chart-head">
         <div>
           <h2>이상 유형별 발생 비율</h2>
-          <p>6개 이상 유형 분포를 전체 누적 기준으로 집계합니다.</p>
         </div>
         <span className="operator-anomaly-chart-total">
           추적 유형 {formatCount(chartTotal)}건
@@ -196,7 +187,6 @@ function LatestAlertBanner({ latestAlert }) {
           <p className="operator-anomaly-banner-label">최신 이상 1건</p>
           <h2>운영자 실시간 알림 배너</h2>
         </div>
-        <span className="operator-anomaly-banner-badge">고정 표시</span>
       </div>
 
       {latestAlert ? (
@@ -285,6 +275,7 @@ function OperatorAnomalyPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId;
 
     async function loadDashboard() {
       try {
@@ -319,16 +310,19 @@ function OperatorAnomalyPage() {
       } finally {
         if (!cancelled) {
           setIsLoading(false);
+          // Schedule the next poll only after the current request settles.
+          timeoutId = window.setTimeout(loadDashboard, REFRESH_INTERVAL_MS);
         }
       }
     }
 
     loadDashboard();
-    const intervalId = window.setInterval(loadDashboard, REFRESH_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
     };
   }, []);
 
@@ -336,12 +330,6 @@ function OperatorAnomalyPage() {
     <DashboardLayout
       role="OPERATOR"
       title="이상 탐지 대시보드"
-      description="RDS에 적재된 이상 탐지 데이터를 AJAX polling 5초 주기로 갱신합니다."
-      metaContent={
-        <p className="dashboard-meta-line">
-          최근 갱신 {dashboard.generatedAt} | 갱신 주기 5초
-        </p>
-      }
       tabs={operatorTabs}
     >
       {errorMessage ? <div className="auth-message error">{errorMessage}</div> : null}
@@ -365,7 +353,6 @@ function OperatorAnomalyPage() {
                     <strong className="operator-anomaly-kpi-value">
                       {formatCount(dashboard.summary[item.key])}
                     </strong>
-                    <span className="operator-anomaly-kpi-helper">{item.helper}</span>
                   </article>
                 ))}
               </div>

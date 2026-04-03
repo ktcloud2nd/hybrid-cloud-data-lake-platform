@@ -1414,6 +1414,373 @@ td {
   font-weight: 700;
 }
 
+.operator-anomaly-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.operator-anomaly-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 100%;
+}
+
+.operator-anomaly-loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  color: #52627d;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.operator-anomaly-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.82fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.operator-anomaly-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.operator-anomaly-kpi-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 172px;
+}
+
+.operator-anomaly-kpi-label {
+  margin: 0;
+  color: #1d2c45;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.operator-anomaly-kpi-value {
+  color: #172a49;
+  font-size: 56px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.operator-anomaly-chart-card {
+  min-height: 100%;
+}
+
+.operator-anomaly-chart-head,
+.operator-anomaly-banner-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.operator-anomaly-chart-head {
+  margin-bottom: 20px;
+}
+
+.operator-anomaly-chart-head h2,
+.operator-anomaly-banner-head h2 {
+  margin: 0;
+  color: #1a2b48;
+}
+
+.operator-anomaly-chart-head h2 {
+  margin-bottom: 8px;
+  font-size: 30px;
+}
+
+.operator-anomaly-banner-head h2 {
+  font-size: 28px;
+}
+
+.operator-anomaly-chart-total {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.operator-anomaly-chart-total {
+  background: #e4edf7;
+  color: #395272;
+}
+
+.operator-anomaly-chart-body {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.88fr) minmax(220px, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+
+.operator-anomaly-chart-visual {
+  position: relative;
+  display: grid;
+  min-height: 280px;
+  place-items: center;
+}
+
+.operator-anomaly-donut {
+  width: min(100%, 320px);
+  height: auto;
+}
+
+.operator-anomaly-donut-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.operator-anomaly-donut-center strong {
+  color: #1a2b48;
+  font-size: 48px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.operator-anomaly-donut-center span {
+  color: #5a6b87;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.operator-anomaly-legend {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.operator-anomaly-legend-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(18, 39, 74, 0.08);
+  border-radius: 16px;
+  background: rgba(247, 250, 255, 0.92);
+}
+
+.operator-anomaly-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.operator-anomaly-legend-label {
+  color: #233450;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.operator-anomaly-legend-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.operator-anomaly-legend-values strong {
+  color: #172a49;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.operator-anomaly-legend-values span {
+  color: #677895;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.operator-anomaly-banner-card {
+  min-height: 0;
+  padding: 18px;
+}
+
+.operator-anomaly-banner-label {
+  margin: 0 0 8px;
+  color: #c2462f;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.operator-anomaly-banner-content {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid rgba(214, 78, 62, 0.16);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 247, 244, 0.98), rgba(255, 240, 234, 0.96));
+}
+
+.operator-anomaly-banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  min-height: 108px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(214, 78, 62, 0.08);
+}
+
+.operator-anomaly-banner-item span {
+  color: #8c5747;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.operator-anomaly-banner-item strong {
+  color: #262f40;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+  word-break: break-word;
+}
+
+.operator-anomaly-banner-empty {
+  margin: 18px 0 0;
+  color: #5c677d;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.operator-anomaly-recent-card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.operator-anomaly-recent-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.operator-anomaly-recent-label {
+  margin: 0 0 8px;
+  color: #365473;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.operator-anomaly-recent-head h2 {
+  margin: 0;
+  color: #1a2b48;
+  font-size: 28px;
+}
+
+.operator-anomaly-recent-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #e4edf7;
+  color: #395272;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.operator-anomaly-recent-table-wrap {
+  flex: 1 1 auto;
+  overflow-x: auto;
+  border: 1px solid rgba(18, 39, 74, 0.08);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(247, 250, 255, 0.96), rgba(240, 245, 252, 0.96));
+}
+
+.operator-anomaly-recent-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.operator-anomaly-recent-table th,
+.operator-anomaly-recent-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(18, 39, 74, 0.08);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.operator-anomaly-recent-table th {
+  color: #627390;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.operator-anomaly-recent-table td {
+  color: #1b2d4b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.operator-anomaly-recent-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.operator-anomaly-recent-table tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.operator-anomaly-recent-table td:first-child {
+  color: #29415f;
+  font-weight: 700;
+}
+
+.operator-anomaly-recent-table td:nth-child(3) {
+  color: #173266;
+  font-weight: 700;
+}
+
+.operator-anomaly-recent-empty {
+  margin: 0;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  color: #5c677d;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .operator-vehicle-shell {
   display: flex;
   flex-direction: column;
@@ -1778,6 +2145,26 @@ td {
   font-weight: 700;
 }
 
+@media (max-width: 1320px) {
+  .operator-anomaly-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .operator-anomaly-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .operator-anomaly-chart-body {
+    grid-template-columns: 1fr;
+  }
+
+  .operator-anomaly-banner-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 960px) {
   .topbar,
   .topbar-left,
@@ -1799,6 +2186,8 @@ td {
   .metric-grid,
   .two-column,
   .user-vehicle-hero,
+  .operator-anomaly-kpi-grid,
+  .operator-anomaly-top-grid,
   .operator-vehicle-kpi-grid,
   .operator-vehicle-top-grid,
   .operator-vehicle-bottom-grid {
@@ -1820,6 +2209,9 @@ td {
   .page-toolbar,
   .section-card-header,
   .section-head,
+  .operator-anomaly-chart-head,
+  .operator-anomaly-banner-head,
+  .operator-anomaly-recent-head,
   .operator-vehicle-panel-head,
   .operator-vehicle-chart-head {
     align-items: flex-start;
@@ -1831,6 +2223,22 @@ td {
   .operator-vehicle-side-card,
   .operator-vehicle-fuel-card {
     padding: 18px;
+  }
+}
+
+@media (max-width: 720px) {
+  .operator-anomaly-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .operator-anomaly-banner-content {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .operator-anomaly-banner-item {
+    min-height: 0;
+    padding: 14px 16px;
   }
 }
 
