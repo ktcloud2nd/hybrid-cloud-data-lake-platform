@@ -112,6 +112,7 @@
     --set grafana.env.GF_SERVER_ROOT_URL="%(protocol)s://%(domain)s/grafana/"
     --set grafana.env.GF_SERVER_SERVE_FROM_SUB_PATH=true
     --set grafana.env.GF_SECURITY_ALLOW_EMBEDDING=true
+    --set grafana.env.GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/default/k3s-infra-overview.json
     --set grafana.env.GF_AUTH_ANONYMOUS_ENABLED=true
     --set grafana.env.GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     --set grafana.tolerations[0].key=nodetype
@@ -132,7 +133,6 @@
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
-  when: prometheus_release_status.stdout != "deployed" or prometheus_statefulset_status.stdout == "not-found"
 
 - name: Wait for Grafana rollout
   command: kubectl rollout status deployment/kube-prometheus-stack-grafana --namespace operator-app --timeout=300s

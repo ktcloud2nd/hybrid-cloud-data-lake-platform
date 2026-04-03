@@ -75,7 +75,7 @@
     grafana_embed_url_resolved: >-
       {{
         grafana_embed_url
-        | default(operator_app_origin_resolved ~ '/grafana/d/k3s-infra-draft/k3s-infra-overview-draft?orgId=1&kiosk', true)
+        | default(operator_app_origin_resolved ~ '/grafana/?orgId=1&kiosk', true)
       }}
   run_once: true
 

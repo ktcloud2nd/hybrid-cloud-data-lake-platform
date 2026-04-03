@@ -583,7 +583,6 @@ jobs:
           QUICKSIGHT_ALLOWED_DOMAINS: ${{ vars.QUICKSIGHT_ALLOWED_DOMAINS }}
           QUICKSIGHT_SESSION_LIFETIME_MINUTES: ${{ vars.QUICKSIGHT_SESSION_LIFETIME_MINUTES }}
           QUICKSIGHT_NAMESPACE: ${{ vars.QUICKSIGHT_NAMESPACE }}
-          GRAFANA_EMBED_URL: ${{ vars.GRAFANA_EMBED_URL }}
         run: |
           PUBLIC_HOSTED_ZONE_NAME_RAW="${{ vars.PUBLIC_HOSTED_ZONE_NAME || 'palja.click' }}"
           PUBLIC_HOSTED_ZONE_NAME="${PUBLIC_HOSTED_ZONE_NAME_RAW#.}"
@@ -602,6 +601,5 @@ jobs:
             -e "quicksight_allowed_domains=$QUICKSIGHT_ALLOWED_DOMAINS" \
             -e "quicksight_session_lifetime_minutes=$QUICKSIGHT_SESSION_LIFETIME_MINUTES" \
             -e "quicksight_namespace=$QUICKSIGHT_NAMESPACE" \
-            -e "grafana_embed_url=$GRAFANA_EMBED_URL" \
             -e "operator_app_host=$OPERATOR_APP_HOST" \
             playbooks/setup_k3s_cluster.yml
