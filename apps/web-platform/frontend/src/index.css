@@ -1506,12 +1506,14 @@ td {
 }
 
 .operator-vehicle-table-card {
-  min-height: 0;
-  height: 100%;
+  min-height: 560px;
+  max-height: 560px;
+  height: 560px;
   display: flex;
   flex-direction: column;
   width: 100%;
   padding: 20px;
+  overflow: hidden;
 }
 
 .operator-vehicle-panel-head,
@@ -1560,7 +1562,10 @@ td {
 .operator-vehicle-table-wrap {
   flex: 1 1 auto;
   min-height: 0;
+  height: 100%;
   max-height: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .operator-vehicle-side-table-wrap {
@@ -1713,6 +1718,15 @@ td {
 .operator-vehicle-fuel-card {
   min-height: 0;
   padding: 20px;
+}
+
+.operator-vehicle-side-card {
+  min-height: 320px;
+  max-height: 320px;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .operator-vehicle-fuel-stack {

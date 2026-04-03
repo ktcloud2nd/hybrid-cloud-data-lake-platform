@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { fetchOperatorVehicleDashboard } from '../../api/operatorVehicleDashboard';
 
-const REFRESH_INTERVAL_MS = 5 * 1000;
+const REFRESH_INTERVAL_MS = 1 * 1000;
 const numberFormatter = new Intl.NumberFormat('ko-KR');
 
 const operatorTabs = [
@@ -51,7 +51,7 @@ const INITIAL_FUEL_ITEMS = [
 
 const INITIAL_DASHBOARD = {
   generatedAt: '-',
-  refreshIntervalSeconds: 5,
+  refreshIntervalSeconds: 1,
   thresholds: {
     delayedSeconds: 15,
     offlineSeconds: 60,
@@ -465,7 +465,7 @@ function OperatorVehiclePage() {
     <DashboardLayout
       role="OPERATOR"
       title="차량 운영 현황 대시보드"
-      description="RDS에 적재된 차량 상태 데이터를 AJAX polling 5초 주기로 갱신합니다."
+      description=""
       metaContent={
         <p className="dashboard-meta-line">
           최근 갱신 {dashboard.generatedAt} | 갱신 주기 {dashboard.refreshIntervalSeconds}초
