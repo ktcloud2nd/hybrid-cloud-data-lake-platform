@@ -590,6 +590,7 @@ jobs:
           ansible-playbook -i inventory/hosts.ini \
             --vault-password-file vault/vault_pass \
             -e "db_password=$DB_PASS" \
+            -e "public_hosted_zone_name=$PUBLIC_HOSTED_ZONE_NAME" \
             -e "quicksight_aws_account_id=$QUICKSIGHT_AWS_ACCOUNT_ID" \
             -e "quicksight_registered_user_arn=$QUICKSIGHT_REGISTERED_USER_ARN" \
             -e "quicksight_anomaly_registered_user_arn=$QUICKSIGHT_ANOMALY_REGISTERED_USER_ARN" \

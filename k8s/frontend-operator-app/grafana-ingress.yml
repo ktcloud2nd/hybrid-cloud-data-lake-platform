@@ -9,8 +9,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: admin.palja.click
-      http:
+    - http:
         paths:
           - path: /grafana
             pathType: Prefix

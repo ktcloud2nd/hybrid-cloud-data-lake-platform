@@ -59,10 +59,19 @@
 
 - name: Ensure operator namespace backend config exists
   vars:
+    public_hosted_zone_name_resolved: >-
+      {{
+        public_hosted_zone_name
+        | default('palja.click', true)
+        | regex_replace('^https?://', '')
+        | regex_replace('/.*$', '')
+        | regex_replace('^\\.+', '')
+        | regex_replace('\\.+$', '')
+      }}
     operator_app_host_input: >-
       {{
         operator_app_host
-        | default('admin.example.com', true)
+        | default('admin.' ~ public_hosted_zone_name_resolved, true)
         | regex_replace('/+$', '')
       }}
     operator_app_origin_resolved: >-
