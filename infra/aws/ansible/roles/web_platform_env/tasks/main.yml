@@ -17,6 +17,68 @@
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
+- name: Resolve public app origins
+  set_fact:
+    public_hosted_zone_name_resolved: >-
+      {{
+        public_hosted_zone_name
+        | default('palja.click', true)
+        | regex_replace('^https?://', '')
+        | regex_replace('/.*$', '')
+        | regex_replace('^\\.+', '')
+        | regex_replace('\\.+$', '')
+      }}
+  run_once: true
+
+- name: Resolve public app hosts
+  set_fact:
+    user_app_host_resolved: "app.{{ public_hosted_zone_name_resolved }}"
+    operator_app_host_input: >-
+      {{
+        operator_app_host
+        | default('admin.' ~ public_hosted_zone_name_resolved, true)
+        | regex_replace('/+$', '')
+      }}
+  run_once: true
+
+- name: Resolve public app URLs
+  set_fact:
+    user_app_origin_resolved: "http://app.{{ public_hosted_zone_name_resolved }}"
+    operator_app_origin_resolved: >-
+      {{
+        operator_app_host_input
+        if operator_app_host_input is match('^https?://')
+        else 'http://' ~ operator_app_host_input
+      }}
+  run_once: true
+
+- name: Resolve public app derived settings
+  set_fact:
+    operator_app_host_resolved: >-
+      {{
+        operator_app_origin_resolved
+        | regex_replace('^https?://', '')
+        | regex_replace('/.*$', '')
+      }}
+    operator_app_scheme_resolved: >-
+      {{
+        'https'
+        if operator_app_origin_resolved is match('^https://')
+        else 'http'
+      }}
+    cors_allowed_origins_resolved: "{{ user_app_origin_resolved }},{{ operator_app_origin_resolved }}"
+    quicksight_allowed_domains_resolved: >-
+      {{
+        quicksight_allowed_domains
+        | default(operator_app_origin_resolved, true)
+      }}
+    grafana_embed_url_resolved: >-
+      {{
+        grafana_embed_url
+        | default(operator_app_origin_resolved ~ '/grafana/d/k3s-infra-draft/k3s-infra-overview-draft?orgId=1&kiosk', true)
+      }}
+  run_once: true
+
 - name: Ensure login namespace backend config exists
   shell: |
     kubectl apply -f - <<EOF
@@ -32,6 +94,7 @@
       DB_USER: "{{ db_username }}"
       DB_SSL_MODE: "require"
       DB_SSL_REJECT_UNAUTHORIZED: "false"
+      CORS_ALLOWED_ORIGINS: "{{ cors_allowed_origins_resolved }}"
     EOF
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
@@ -52,56 +115,13 @@
       DB_USER: "{{ db_username }}"
       DB_SSL_MODE: "require"
       DB_SSL_REJECT_UNAUTHORIZED: "false"
+      CORS_ALLOWED_ORIGINS: "{{ cors_allowed_origins_resolved }}"
     EOF
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
   run_once: true
 
 - name: Ensure operator namespace backend config exists
-  vars:
-    public_hosted_zone_name_resolved: >-
-      {{
-        public_hosted_zone_name
-        | default('palja.click', true)
-        | regex_replace('^https?://', '')
-        | regex_replace('/.*$', '')
-        | regex_replace('^\\.+', '')
-        | regex_replace('\\.+$', '')
-      }}
-    operator_app_host_input: >-
-      {{
-        operator_app_host
-        | default('admin.' ~ public_hosted_zone_name_resolved, true)
-        | regex_replace('/+$', '')
-      }}
-    operator_app_origin_resolved: >-
-      {{
-        operator_app_host_input
-        if operator_app_host_input is match('^https?://')
-        else 'http://' ~ operator_app_host_input
-      }}
-    operator_app_host_resolved: >-
-      {{
-        operator_app_origin_resolved
-        | regex_replace('^https?://', '')
-        | regex_replace('/.*$', '')
-      }}
-    operator_app_scheme_resolved: >-
-      {{
-        'https'
-        if operator_app_origin_resolved is match('^https://')
-        else 'http'
-      }}
-    quicksight_allowed_domains_resolved: >-
-      {{
-        quicksight_allowed_domains
-        | default(operator_app_origin_resolved, true)
-      }}
-    grafana_embed_url_resolved: >-
-      {{
-        grafana_embed_url
-        | default(operator_app_origin_resolved ~ '/grafana/d/k3s-infra-draft/k3s-infra-overview-draft?orgId=1&kiosk', true)
-      }}
   shell: |
     kubectl apply -f - <<EOF
     apiVersion: v1
@@ -116,6 +136,7 @@
       DB_USER: "{{ db_username }}"
       OPERATOR_APP_HOST: "{{ operator_app_host_resolved }}"
       APP_PUBLIC_SCHEME: "{{ operator_app_scheme_resolved }}"
+      CORS_ALLOWED_ORIGINS: "{{ cors_allowed_origins_resolved }}"
       DB_SSL_MODE: "require"
       DB_SSL_REJECT_UNAUTHORIZED: "false"
       GRAFANA_ENABLED: "true"
@@ -181,6 +202,93 @@
       QUICKSIGHT_REGISTERED_USER_ARN: "{{ quicksight_registered_user_arn | default('', true) }}"
       QUICKSIGHT_ANOMALY_REGISTERED_USER_ARN: "{{ quicksight_anomaly_registered_user_arn | default('', true) }}"
       QUICKSIGHT_VEHICLE_REGISTERED_USER_ARN: "{{ quicksight_vehicle_registered_user_arn | default('', true) }}"
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure user web ingress exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: user-web-ingress
+      namespace: user-app
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: web
+        traefik.ingress.kubernetes.io/router.middlewares: user-app-coraza-waf@kubernetescrd
+    spec:
+      ingressClassName: traefik
+      rules:
+        - host: "{{ user_app_host_resolved }}"
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: user-app
+                    port:
+                      number: 80
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure operator web ingress exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: operator-web-ingress
+      namespace: operator-app
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: web
+        traefik.ingress.kubernetes.io/router.middlewares: operator-app-coraza-waf@kubernetescrd
+    spec:
+      ingressClassName: traefik
+      rules:
+        - host: "{{ operator_app_host_resolved }}"
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: operator-app
+                    port:
+                      number: 80
+    EOF
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  run_once: true
+
+- name: Ensure operator Grafana ingress exists
+  shell: |
+    kubectl apply -f - <<EOF
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: grafana-ingress
+      namespace: operator-app
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: web
+        traefik.ingress.kubernetes.io/router.priority: "100"
+    spec:
+      ingressClassName: traefik
+      rules:
+        - host: "{{ operator_app_host_resolved }}"
+          http:
+            paths:
+              - path: /grafana
+                pathType: Prefix
+                backend:
+                  service:
+                    name: kube-prometheus-stack-grafana
+                    port:
+                      number: 80
     EOF
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
