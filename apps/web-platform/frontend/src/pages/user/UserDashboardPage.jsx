@@ -3,6 +3,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { fetchUserDashboard } from '../../api/userDashboard';
 import { getStoredSession } from '../../utils/authStorage';
 
+const REFRESH_INTERVAL_MS = 1 * 1000; // 주기 상수
 const assetBaseUrl = import.meta.env.BASE_URL || '/';
 const DEFAULT_WEATHER_COORDS = {
   latitude: 37.5665,
@@ -559,14 +560,14 @@ function UserDashboardPage() {
         const result = await fetchUserDashboard(user.vehicleId);
 
         if (cancelled) {
-          return;
+         return;
         }
 
         setDashboard(result.dashboard);
         setDashboardError('');
       } catch (error) {
         if (cancelled) {
-          return;
+         return;
         }
 
         setDashboard(null);
@@ -575,11 +576,14 @@ function UserDashboardPage() {
     }
 
     loadDashboard();
+    const intervalId = window.setInterval(loadDashboard, REFRESH_INTERVAL_MS);
 
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
     };
   }, [user?.vehicleId]);
+
 
   const metrics = dashboard?.metrics;
 
