@@ -148,12 +148,3 @@ resource "aws_lambda_permission" "allow_function_url" {
   principal              = "*"
   function_url_auth_type = "NONE"
 }
-
-resource "aws_lambda_permission" "allow_function_via_url" {
-  statement_id  = "AllowInvokeFunctionViaFunctionUrl"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.notifier.function_name
-  principal     = "*"
-
-  invoked_via_function_url = true
-}

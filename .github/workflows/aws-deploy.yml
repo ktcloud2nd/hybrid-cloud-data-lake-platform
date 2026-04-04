@@ -251,6 +251,25 @@ jobs:
         working-directory: ${{ github.workspace }}/infra/aws/terraform/alerts
         run: terraform apply -input=false -auto-approve
 
+      # 부족한 Function URL 권한만 AWS CLI로 후처리 (삭제 후 재추가)
+      - name: Reset Lambda Function URL invoke permission
+        run: |
+          aws lambda remove-permission \
+            --region "${{ env.AWS_REGION }}" \
+            --function-name ktcloud2nd-slack-anomaly-notifier \
+            --statement-id AllowInvokeFunctionViaFunctionUrl
+        continue-on-error: true
+
+      - name: Ensure Lambda Function URL invoke permission
+        run: |
+          aws lambda add-permission \
+            --region "${{ env.AWS_REGION }}" \
+            --function-name ktcloud2nd-slack-anomaly-notifier \
+            --statement-id AllowInvokeFunctionViaFunctionUrl \
+            --action lambda:InvokeFunction \
+            --principal "*" \
+            --invoked-via-function-url
+
   terraform-destroy:
     name: Terraform Destroy
     runs-on: ubuntu-latest
