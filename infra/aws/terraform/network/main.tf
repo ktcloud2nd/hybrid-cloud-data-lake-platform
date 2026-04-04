@@ -18,6 +18,49 @@ data "aws_route53_zone" "public" {
   private_zone = false
 }
 
+# ALB에 붙일 HTTPS 인증서 자체를 AWS에서 발급
+# app.palja.click / admin.palja.click 용 ACM 인증서 생성 (Route 53 DNS 검증까지 연결)
+resource "aws_acm_certificate" "public_apps" {
+  count                     = var.create_public_dns_records ? 1 : 0
+  domain_name               = local.user_app_host
+  subject_alternative_names = [local.operator_app_host]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Name = "${var.name_prefix}-public-apps-cert"
+  }
+}
+
+# ACM이 요구하는 DNS 검증용 CNAME 레코드를 Route 53에 자동 생성
+resource "aws_route53_record" "public_apps_cert_validation" {
+  for_each = var.create_public_dns_records ? {
+    for dvo in aws_acm_certificate.public_apps[0].domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  } : {}
+
+  zone_id         = data.aws_route53_zone.public[0].zone_id
+  name            = each.value.name
+  type            = each.value.type
+  records         = [each.value.record]
+  ttl             = 60
+  allow_overwrite = true
+}
+
+# DNS 검증이 끝나면 인증서를 ISSUED 상태로 확정
+resource "aws_acm_certificate_validation" "public_apps" {
+  count = var.create_public_dns_records ? 1 : 0
+
+  certificate_arn         = aws_acm_certificate.public_apps[0].arn
+  validation_record_fqdns = [for record in aws_route53_record.public_apps_cert_validation : record.fqdn]
+}
+
 resource "aws_vpc" "this" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -287,6 +330,8 @@ resource "aws_lb" "public" {
 }
 
 # ALB Target Group - 워커 노드 HTTP:80 (Traefik)
+# ★ ALB가 실제 HTTPS를 받아주고, HTTP는 HTTPS로 강제 전환 ★
+# ALB는 443으로 받고, 뒤쪽 K3s/Traefik에는 HTTP 80으로 넘겨도 됨
 resource "aws_lb_target_group" "worker_http" {
   name     = "${var.name_prefix}-worker-http-tg"
   port     = 80
@@ -308,11 +353,31 @@ resource "aws_lb_target_group" "worker_http" {
   }
 }
 
-# ALB Listener - HTTP:80 → 워커 노드:80 포워딩
+# ALB Listener - HTTP:80 -> 워커 노드:80 포워딩
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.public.arn
   port              = 80
   protocol          = "HTTP"
+
+    # default_action 내용을 redirect로 변경
+    default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+# HTTPS listener
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.public.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = aws_acm_certificate_validation.public_apps[0].certificate_arn
 
   default_action {
     type             = "forward"

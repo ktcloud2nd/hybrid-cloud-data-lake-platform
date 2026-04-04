@@ -41,14 +41,15 @@
       }}
   run_once: true
 
+# 기존 HTTP -> HTTPS로 변경 (앱 설정 전체가 HTTPS 기반 공개 주소를 쓰도록 변경)
 - name: Resolve public app URLs
   set_fact:
-    user_app_origin_resolved: "http://app.{{ public_hosted_zone_name_resolved }}"
+    user_app_origin_resolved: "https://app.{{ public_hosted_zone_name_resolved }}"
     operator_app_origin_resolved: >-
       {{
         operator_app_host_input
         if operator_app_host_input is match('^https?://')
-        else 'http://' ~ operator_app_host_input
+        else 'https://' ~ operator_app_host_input
       }}
   run_once: true
 
