@@ -44,7 +44,8 @@ vehicles = [
         "lon": round(random.uniform(LON_MIN, LON_MAX), 6),
         "speed": 0,
         "engine_on": True,
-        "fuel_level": round(random.uniform(5, 100), 2)
+        "fuel_level": round(random.uniform(5, 100), 2),
+        "last_anomaly_at": 0 # 쿨다운 값
     }
     for i in range(500)
 ]
@@ -104,21 +105,27 @@ def simulate_vehicle(vehicle):
     """ 차량별 독립 스레드에서 실행되는 시뮬레이션 로직 """
     while True:
         roll = random.random()
+        now = time.time()
+        anomaly_cooldown_seconds = 300  # 5분
+        can_emit_anomaly = now - vehicle.get("last_anomaly_at", 0) >= anomaly_cooldown_seconds
 
-        # 이상 데이터 발생 구간 (합계 10%)
-        if roll < 0.01: # 미수신 (30초 잠수)
+        # 이상 데이터 발생 구간 (차량별 5분 쿨다운)
+        if can_emit_anomaly and roll < 0.005:  # 미수신 (30초 잠수)
+            vehicle["last_anomaly_at"] = now
             time.sleep(30)
             continue
-        elif roll < 0.015: # 폭주 (짧은 간격(1초 내) 5회 연속 전송)
+        elif can_emit_anomaly and roll < 0.0075:  # 폭주
+            vehicle["last_anomaly_at"] = now
             for _ in range(5):
                 send_to_kafka(vehicle, 1, 1)
                 time.sleep(0.1)
             continue
-        elif roll < 0.02: # GPS 도약
+        elif can_emit_anomaly and roll < 0.01:  # GPS 도약
+            vehicle["last_anomaly_at"] = now
             tmp_lat = vehicle["lat"]
-            vehicle["lat"] += 1.2 # 약 130km 점프
+            vehicle["lat"] += 1.2
             send_to_kafka(vehicle, 1, 1)
-            vehicle["lat"] = tmp_lat # 전송 후 복구
+            vehicle["lat"] = tmp_lat
             time.sleep(random.randint(2, 5))
             continue
 
