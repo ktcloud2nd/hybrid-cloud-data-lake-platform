@@ -140,3 +140,11 @@ resource "aws_lambda_function_url" "notifier" {
     max_age           = 0
   }
 }
+
+resource "aws_lambda_permission" "allow_function_url" {
+  statement_id           = "AllowPublicFunctionUrlInvoke"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.notifier.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
