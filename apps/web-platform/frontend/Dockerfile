@@ -2,8 +2,8 @@ FROM node:20-alpine AS build
 
 ARG APP_TARGET=user
 ARG VITE_API_BASE_URL=/api
-ARG VITE_USER_APP_URL=https://app.example.com
-ARG VITE_OPERATOR_APP_URL=https://admin.example.com
+ARG VITE_USER_APP_URL=http://app.palja.click
+ARG VITE_OPERATOR_APP_URL=http://admin.palja.click
 
 ENV VITE_APP_TARGET=$APP_TARGET
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
