@@ -7,14 +7,23 @@ function withGrafanaEmbedOptions(value = '', { theme = 'dark', kiosk = 'tv' } = 
     return '';
   }
 
+  const hasMeaningfulParam = (url, key) => {
+    if (!url.searchParams.has(key)) {
+      return false;
+    }
+
+    const current = String(url.searchParams.get(key) || '').trim();
+    return current.length > 0;
+  };
+
   try {
     const url = new URL(value);
 
-    if (theme && !url.searchParams.has('theme')) {
+    if (theme && !hasMeaningfulParam(url, 'theme')) {
       url.searchParams.set('theme', theme);
     }
 
-    if (kiosk && !url.searchParams.has('kiosk')) {
+    if (kiosk && !hasMeaningfulParam(url, 'kiosk')) {
       url.searchParams.set('kiosk', kiosk);
     }
 
@@ -22,11 +31,11 @@ function withGrafanaEmbedOptions(value = '', { theme = 'dark', kiosk = 'tv' } = 
   } catch {
     const params = [];
 
-    if (theme && !value.includes('theme=')) {
+    if (theme && !/[?&]theme=[^&]+/.test(value)) {
       params.push(`theme=${theme}`);
     }
 
-    if (kiosk && !value.includes('kiosk=')) {
+    if (kiosk && !/[?&]kiosk=[^&]+/.test(value)) {
       params.push(`kiosk=${kiosk}`);
     }
 
