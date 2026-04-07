@@ -9,25 +9,42 @@
 ```text
 repo-root/
 ├─ README.md
-├─ docs/
-│  ├─ architecture.md
-│  ├─ network-matrix.md
-│  ├─ import-spec.md
-│  └─ rnr.md
-├─ dashboard/
-├─ api/
+├─ AGENTS.md
+├─ .github/
+│  └─ workflows/
+├─ apps/
+│  └─ web-platform/
+│     ├─ backend/
+│     │  └─ src/
+│     ├─ frontend/
+│     │  ├─ public/
+│     │  └─ src/
+│     ├─ .env.example
+│     ├─ deploy.env.example
+│     └─ docker-compose.deployment.yml
 ├─ infra/
-│  ├─ terraform/
-│  │  └─ aws/
-│  │     ├─ network/
+│  ├─ aws/
+│  │  ├─ ansible/
+│  │  ├─ lambda/
+│  │  └─ terraform/
+│  │     ├─ alerts/
 │  │     ├─ compute/
-│  │     └─ data/
-│  └─ ansible/
-│     ├─ inventories/
-│     ├─ roles/
-│     └─ playbooks/
-└─ .github/
-   └─ workflows/
+│  │     ├─ data/
+│  │     └─ network/
+│  ├─ azure/
+│  │  ├─ ansible/
+│  │  ├─ scripts/
+│  │  └─ terraform/
+│  └─ edge/
+│     ├─ Dockerfile
+│     ├─ docker-compose.yml
+│     └─ vehicle_simulator.py
+└─ k8s/
+   ├─ backend-login/
+   ├─ backend-operator/
+   ├─ backend-user/
+   ├─ frontend-operator-app/
+   └─ frontend-user-app/
 ```
 
 ## Branch Strategy
