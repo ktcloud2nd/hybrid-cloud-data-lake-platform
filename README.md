@@ -2,7 +2,7 @@
 
 멀티클라우드 기반 차량 데이터 플랫폼 2차 프로젝트 저장소입니다.
 
-현재 저장소는 AWS 퍼블릭 클라우드 베이스라인과 팀 협업용 문서/폴더 구조를 먼저 세팅한 상태입니다. 인프라 1 담당자는 `infra/aws/terraform/network`를 기준으로 네트워크 작업을 이어가면 됩니다.
+현재 저장소는 멀티클라우드 기반 차량 데이터 플랫폼의 애플리케이션, AWS·Azure 인프라 코드, 엣지 실행 환경, Kubernetes 배포 리소스, 운영 자동화 구성을 함께 관리하는 통합 저장소입니다. `apps/web-platform`, `infra/aws`, `infra/azure`, `infra/edge`, `k8s`를 중심으로 서비스 구현과 배포 구성이 정리되어 있습니다.
 
 ## Repository Layout
 
