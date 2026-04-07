@@ -52,7 +52,7 @@ resource "aws_db_instance" "postgresql" {
   vpc_security_group_ids = [data.aws_security_group.db_sg.id]
 
   publicly_accessible = true # Consumer VM으로부터 데이터 받으려면 퍼블릭 액세스 허용해야 함 (방화벽 있으므로 보안 안심해도 됨)
-  multi_az            = false # Multi-AZ 적용(true) 예정
+  multi_az            = true  # Multi-AZ enabled
 
   backup_retention_period = var.backup_retention_period
 
